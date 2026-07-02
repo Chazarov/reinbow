@@ -1,0 +1,45 @@
+services:
+  frontend:
+    build:
+      context: "./FeedServiceFrontend"
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - feedservice-network
+  
+  backend:
+    restart: unless-stopped
+    build:
+      context: ./FeedServiceBackend
+      dockerfile: Dockerfile
+    ports:
+      - "8070:8070"
+    env_file:
+      - fs_backend.env
+    depends_on:
+      - db
+    networks:
+      - feedservice-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - feedservice-network
+
+volumes:
+  pgdata:
+
+networks:
+  feedservice-network:
+    driver: bridge
