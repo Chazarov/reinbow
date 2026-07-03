@@ -25,3 +25,7 @@ func (us *UserService) ExistsByUsername(username string) (bool, error) {
 func (us *UserService) GetByUsername(username string) (models.User, error) {
 	return us.userDAO.GetByUsername(username)
 }
+
+func (us *UserService) GetByID(userID int) (models.User, error) {
+	return us.userDAO.GetByID(userID)
+}

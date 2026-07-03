@@ -1,13 +1,14 @@
 package controller
 
 import (
+	"log"
 	"traineesheep/feedservice/internal/utils"
 	"traineesheep/feedservice/internal/utils/notify"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-func (ctrl *Controller) signup(c *fiber.Ctx) error {
+func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 	input, parseError := utils.ParseUserData(c, true)
 	if parseError != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
@@ -47,6 +48,7 @@ func (ctrl *Controller) signup(c *fiber.Ctx) error {
 
 	notify.NotifyUserRegistered(input.Username, input.Email, input.Password)
 
+	log.Printf("POST /signup: Пользователь %s зарегистрирован", user.Username)
 	// Успешная регистрация – возвращаем созданного пользователя
 	return c.Status(fiber.StatusCreated).JSON(utils.ApiResponse{
 		Data:       user,

@@ -5,6 +5,7 @@ const Dotenv = require('dotenv-webpack');
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
   console.log("FeedServiceFrontend: загружен " + argv.mode + " конфиг")
+
   return {
     entry: './js/index.js',
 
@@ -18,7 +19,18 @@ module.exports = (env, argv) => {
       static: './dist',
       hot: true,
       port: 3000,
-      open: true,
+      open: false,
+      proxy: [
+        {
+          context: ['/api'],
+          // target: 'http://10.64.11.142:8080',
+          target: 'http://192.168.56.1:8080',
+          changeOrigin: true,
+          pathRewrite: {
+            '^/api': '',
+          }
+        }
+      ]
     },
 
     plugins: [

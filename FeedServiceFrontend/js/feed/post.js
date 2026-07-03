@@ -25,17 +25,17 @@ export function createPost(post) {
     let sliderImages = "<div>"
 
     // todo в src вставить ${process.env.IS_URL}/api/images/${imageId}"
-    const test = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSPshUBFBR7xshIaXFc_ir-eagtAueBv7aX5Nvxdny6qg&s'
+    //const test = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSPshUBFBR7xshIaXFc_ir-eagtAueBv7aX5Nvxdny6qg&s'
 
     for(const imageId of post.images || []) {
-        sliderImages += `<img id="image_${imageId}" src="${test}" class="postImage">`
+        sliderImages += `<img id="image_${imageId}" src="${process.env.IS_URL}/api/images/${imageId}"" class="postImage">`
     }
     sliderImages += "</div>"
 
     const tools = `
         <div class="imageTools">
-            <span onClick="prevImage(${post.id})" class="imageBtn imagePrev"><</span>
-            <span onClick="nextImage(${post.id})" class="imageBtn imageNext">></span>
+            <span onClick="prevImage(${post.id})" class="imageBtn imagePrev">&larr;</span>
+            <span onClick="nextImage(${post.id})" class="imageBtn imageNext">&rarr;</span>
         </div>`
 
 

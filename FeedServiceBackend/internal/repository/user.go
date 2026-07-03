@@ -9,18 +9,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 type UserDAO struct {
 	db *sql.DB
 }
 
 func NewUserDAO(db *sql.DB) *UserDAO {
-    return &UserDAO{db: db}
+	return &UserDAO{db: db}
 }
 
 func (ud *UserDAO) CreateUser(userData utils.UserData) (models.User, error) {
 	// Хэшируем пароль
-	hashedPassword, passError := bcrypt.GenerateFromPassword([]byte(userData.Password), 
+	hashedPassword, passError := bcrypt.GenerateFromPassword([]byte(userData.Password),
 		bcrypt.DefaultCost)
 	if passError != nil {
 		return models.User{}, passError
@@ -28,9 +27,10 @@ func (ud *UserDAO) CreateUser(userData utils.UserData) (models.User, error) {
 
 	var user models.User
 	dbError := ud.db.QueryRow(
-		"INSERT INTO users (username, password, created_at, tg_chat_id, email) VALUES ($1, $2, $3, $4, $5) RETURNING id, username, created_at, tg_chat_id, email",
-		userData.Username, string(hashedPassword), time.Now(), userData.TgChatId, userData.Email,
-	).Scan(&user.ID, &user.Username, &user.CreatedAt, &user.TgChatId, &user.Email)
+		"INSERT INTO users (username, password, created_at, email) "+
+			"VALUES ($1, $2, $3, $4) RETURNING id, username, created_at, email",
+		userData.Username, string(hashedPassword), time.Now(), userData.Email,
+	).Scan(&user.ID, &user.Username, &user.CreatedAt, &user.Email)
 	if dbError != nil {
 		return models.User{}, dbError
 	}
@@ -38,15 +38,15 @@ func (ud *UserDAO) CreateUser(userData utils.UserData) (models.User, error) {
 }
 
 func (ud *UserDAO) ExistsByUsername(username string) (bool, error) {
-    var exists bool
-    err := ud.db.QueryRow(
-        "SELECT EXISTS(SELECT 1 FROM users WHERE username=$1)",
-        username,
-    ).Scan(&exists)
-    if err != nil {
-        return false, err
-    }
-    return exists, nil
+	var exists bool
+	err := ud.db.QueryRow(
+		"SELECT EXISTS(SELECT 1 FROM users WHERE username=$1)",
+		username,
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func (ud *UserDAO) GetByUsername(username string) (models.User, error) {
@@ -54,6 +54,16 @@ func (ud *UserDAO) GetByUsername(username string) (models.User, error) {
 	err := ud.db.QueryRow(
 		"SELECT id, username, password, created_at FROM users WHERE username = $1",
 		username,
+	).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt)
+
+	return user, err
+}
+
+func (ud *UserDAO) GetByID(userID int) (models.User, error) {
+	var user models.User
+	err := ud.db.QueryRow(
+		"SELECT id, username, password, created_at FROM users WHERE id = $1",
+		userID,
 	).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt)
 
 	return user, err

@@ -3,9 +3,7 @@ export function initSigninHandlers() {
     const signinError = document.getElementById('signinError');
 
     // Сохраняем токены и пользователя в localStorage
-    function saveSession(accessToken, refreshToken, user) {
-        localStorage.setItem('access_token', accessToken);
-        localStorage.setItem('refresh_token', refreshToken);
+    window.saveSession = (user) => {
         localStorage.setItem('user', JSON.stringify(user));
     }
 
@@ -22,10 +20,11 @@ export function initSigninHandlers() {
         }
 
         try {
-            const response = await fetch(process.env.FS_URL + '/signin', {
+            const response = await fetch('/api/signin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                credentials: 'include'
             });
 
             const data = await response.json();
@@ -41,7 +40,7 @@ export function initSigninHandlers() {
             }
 
             // Сохраняем сессию
-            saveSession(access_token, refresh_token, user);
+            saveSession(user);
 
             // Обновляем UI
             showLoggedInUI(user);

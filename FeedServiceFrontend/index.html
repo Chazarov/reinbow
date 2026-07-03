@@ -11,15 +11,14 @@
                 <h1 class="logo">ИН100ГРАММ</h1>
                 <nav class="nav">
                     <div id="guestButtons">
-                        <button id="btnSignin" class="btn btn-outline">Войти</button>
-                        <button id="btnSignup" class="btn btn-primary">Регистрация</button>
+                        <button id="btnSignin" class="btn btn-outline"><span class="fa fa-sign-in"></span></button>
+                        <button id="btnSignup" class="btn btn-primary"><span class="fa fa-user-plus"></span></button>
                     </div>
                     <div id="userBlock" style="display: none;">
                         <span id="userNameDisplay" class="user-name"></span>
-                        <button id="btnLogout" class="btn btn-outline">Выйти</button>
-                        <button id="btnUpload" class="btn btn-outline">Загрузка изображений</button> 
+                        <button id="allPostsBtn" class="btn btn-outline" style="display: none;"><span class="fa fa-reply-all"></span></button>
+                        <button id="btnLogout" class="btn btn-outline"><span class="fa fa-sign-out"></span></button>
                     </div>
-                    <button id="allPostsBtn" class="btn btn-outline" style="display: none;">Все посты</button>
                 </nav>
             </div>
         </header>
@@ -81,10 +80,6 @@
                         <label for="signupConfirm">Повторите пароль</label>
                         <input type="password" id="signupConfirm" name="confirm" required>
                     </div>
-                    <div class="form-group">
-                        <label for="signupTg">Telegram Chat ID (необязательно)</label>
-                        <input type="text" id="signupTg" name="tg_chat_id">
-                    </div>
                     <div id="signupError" class="error-message"></div>
                     <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
                 </form>
@@ -115,5 +110,7 @@
                 </form>
             </div>
         </div>
+
+        <button id="btnUpload" class="btn btn-outline">+</button> 
     </body>
 </html>

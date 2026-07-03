@@ -1,9 +1,14 @@
 import '../css/style.css';
+import '../css/feed.css';
+import '../css/form.css';
+import '../css/modal.css';
+import '../css/font-awesome.min.css';
 import { initFeed } from './feed/feed.js';
 import { initLogoutHandler } from './handlers/logout.js';
 import { initSigninHandlers } from './handlers/signin.js';
 import { initSignupHandlers } from './handlers/signup.js';
 import { initUploadHandlers } from './handlers/upload.js';
+import { refreshAccessToken } from './handlers/refresh.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Модальные окна
@@ -19,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const guestButtons = document.getElementById('guestButtons');
     const userBlock = document.getElementById('userBlock');
     const userNameDisplay = document.getElementById('userNameDisplay');
+    const uploadBtn = document.getElementById('btnUpload');
 
     // Сброс формы и сообщения об ошибке
     window.resetForm = function(form, errorElement) {
@@ -87,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (guestButtons) guestButtons.style.display = 'none';
         if (userBlock) userBlock.style.display = 'block';
         if (userNameDisplay) userNameDisplay.textContent = user.username;
+        if (uploadBtn) uploadBtn.style.display = 'inline-flex'
     }
 
     // Обновляем интерфейс для гостя
@@ -94,16 +101,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (guestButtons) guestButtons.style.display = 'block';
         if (userBlock) userBlock.style.display = 'none';
         if (userNameDisplay) userNameDisplay.textContent = '';
+        if (uploadBtn) uploadBtn.style.display = 'none'
     }
 
     // При загрузке страницы проверяем, есть ли сохранённая сессия
     function checkAuthOnLoad() {
-        const user = getSavedUser();
-        if (user) {
-            showLoggedInUI(user);
-        } else {
-            showGuestUI();
-        }
+        refreshAccessToken().then(() => {
+            const user = getSavedUser();
+            if (user) {
+                showLoggedInUI(user);
+            } else {
+                showGuestUI();
+            }
+        })
     }
 
     // Вызов при старте

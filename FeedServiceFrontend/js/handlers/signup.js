@@ -10,7 +10,6 @@ export function initSignupHandlers() {
         const email = document.getElementById('signupEmail').value.trim();
         const password = document.getElementById('signupPassword').value;
         const confirm = document.getElementById('signupConfirm').value;
-        const tgChatId = document.getElementById('signupTg').value.trim();
 
         // Валидация
         if (!username || !email || !password || !confirm) {
@@ -33,11 +32,10 @@ export function initSignupHandlers() {
             username,
             password,
             email,
-            tg_chat_id: tgChatId || undefined
         };
 
         try {
-            const response = await fetch(process.env.FS_URL + '/signup', {
+            const response = await fetch('/api/signup', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)

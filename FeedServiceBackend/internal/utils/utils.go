@@ -19,7 +19,6 @@ type UserData struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Email 	 string `json:"email"`
-	TgChatId string `json:"tg_chat_id"`
 }
 
 // Функция для доступа к env'ам
@@ -37,7 +36,6 @@ func ParseUserData(c *fiber.Ctx, validateEmail bool) (UserData, error) {
 		Username string `json:"username"`
 		Password string `json:"password"`
 		Email string `json:"email"`
-		TgChatId string `json:"tg_chat_id"`
 	}
 
 	if err := c.BodyParser(&input); err != nil {

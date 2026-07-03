@@ -55,14 +55,16 @@ export function initFeed() {
     function loadMainFeed() {
         currentUserFeed = null;
         allPostsBtn.style.display = 'none';
-        fetchPosts(process.env.FS_URL + '/feed');
+        userNameDisplay.style.display = 'inline'
+        fetchPosts('/api/feed');
     }
 
     // Загрузка ленты конкретного пользователя
     window.loadUserFeed = (userId) => {
         currentUserFeed = userId;
         allPostsBtn.style.display = 'inline-block';
-        fetchPosts(`${process.env.FS_URL}/feed?user_id=${userId}`);
+        userNameDisplay.style.display = 'none'
+        fetchPosts(`/api/feed?user_id=${userId}`);
     }
 
     // Обработчики

@@ -8,18 +8,17 @@ import (
 )
 
 type Controller struct {
-	UserService *service.UserService
-	FeedService *service.FeedService
+	UserService  *service.UserService
+	FeedService  *service.FeedService
 	TokenService *service.TokenService
 }
 
-
-func Create(app *fiber.App, us *service.UserService, 
-		fs *service.FeedService, ts *service.TokenService) {
+func Create(app *fiber.App, us *service.UserService,
+	fs *service.FeedService, ts *service.TokenService) {
 	// Инициализация контроллера. Через него реализовано прокидывание контекста
 	ctrl := &Controller{
-		UserService: us,
-		FeedService: fs,
+		UserService:  us,
+		FeedService:  fs,
 		TokenService: ts,
 	}
 
@@ -27,13 +26,13 @@ func Create(app *fiber.App, us *service.UserService,
 	app.Get("/feed", ctrl.Feed)
 
 	// Загрузка отсортированной ленты пользователя
-	// app.Get("/feed?user_id=:userID", ctrl.UserFeed)
+	app.Get("/refresh", middleware.RefreshTokenRequired, ctrl.Refresh)
 
 	// Вход
-	app.Post("/signin", ctrl.signin)
+	app.Post("/signin", ctrl.Signin)
 
 	// Регистрация
-	app.Post("/signup", ctrl.signup)
+	app.Post("/signup", ctrl.Signup)
 
 	// Удаление токена у пользователя
 	app.Post("/logout", ctrl.Logout)

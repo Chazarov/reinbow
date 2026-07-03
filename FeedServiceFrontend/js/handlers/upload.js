@@ -68,23 +68,17 @@ export function initUploadHandlers() {
         }
 
         const formData = new FormData();
-        formData.append('user_id', getSavedUser().id);
+
         formData.append('title', title);
         formData.append('description', description);
         for (const file of files) {
             formData.append('images', file);
         }
 
-        const accessToken = localStorage.getItem('access_token');
-        const headers = {};
-        if (accessToken) {
-            headers['Authorization'] = 'Bearer ' + accessToken;
-        }
 
         try {
-            const response = await fetch(process.env.FS_URL + '/upload', {
+            const response = await fetch('/api/upload', {
                 method: 'POST',
-                headers: headers,
                 body: formData,
             });
 

@@ -94,15 +94,25 @@ func (fd *FeedDAO) CreatePost(userID int, title string, description string, imag
     if len(imageIDs) == 0 {
         return models.Post{}, fmt.Errorf("Изображения не выбраны")
     }
-    
+
     var post models.Post
-    err := fd.db.QueryRow(
+    postError := fd.db.QueryRow(
         "INSERT INTO post (user_id, title, description) VALUES ($1, $2, $3) RETURNING id, user_id, title, description, created_at",
         userID, title, description,
     ).Scan(&post.ID, &post.UserID, &post.Title, &post.Description, &post.CreatedAt)
 
-    if err != nil {
-        return models.Post{}, err
+    if postError != nil {
+        return models.Post{}, postError
+    }
+
+    for _, imgID := range imageIDs {
+        _, imagePostError := fd.db.Exec(
+            "INSERT INTO image_post (post_id, image_id) VALUES ($1, $2)",
+            post.ID, imgID,
+        )
+        if imagePostError != nil {
+            return models.Post{}, imagePostError
+        }
     }
 
     return post, nil

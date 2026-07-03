@@ -19,7 +19,7 @@ func New() *fiber.App {
         AllowOrigins:     allowedUrls,
         AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
         AllowMethods:     "GET, POST, PUT, DELETE, OPTIONS",
-        AllowCredentials: false, // JWT передаётся в заголовке, куки не нужны
+		AllowCredentials: true,
     }))
 
 	return app
