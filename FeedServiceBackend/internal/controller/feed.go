@@ -9,6 +9,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// Feed обрабатывает GET-запросы на получение ленты постов.
+//
+// Если параметр запроса user_id отсутствует, возвращает общую ленту,
+// отсортированную по дате создания (сначала новые).
+// Если передан user_id, загружает ленту конкретного пользователя.
+// Некорректный user_id приводит к ответу 400 Bad Request.
+//
+// Ответ:
+//   - 200: { success: true, data: []Post }
+//   - 400: { success: false, err_message: "Некорректный user_id" }
+//   - 500: { success: false, err_message: "Ошибка получения постов" }
 func (ctrl *Controller) Feed(c *fiber.Ctx) error {
 	userID := c.Query("user_id")
 

@@ -18,6 +18,8 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// mimeTypeByExtension возвращает MIME-тип файла на основе его расширения.
+// Если расширение отсутствует или не распознано, возвращает "application/octet-stream".
 func mimeTypeByExtension(filename string) string {
 	ext := filepath.Ext(filename)
 	if ext == "" {
@@ -34,6 +36,8 @@ func mimeTypeByExtension(filename string) string {
 	return mt
 }
 
+// mediaTypeToShort преобразует полный MIME-тип в короткий формат (например, "image/jpeg" → "jpeg").
+// Если тип не содержит '/', возвращает исходную строку.
 func mediaTypeToShort(mediaType string) string {
 	parts := strings.SplitN(mediaType, "/", 2)
 	if len(parts) < 2 {
@@ -47,6 +51,23 @@ func mediaTypeToShort(mediaType string) string {
 	return subtype
 }
 
+// Upload обрабатывает POST-запрос на загрузку изображений и создание поста.
+//
+// Ожидает Content-Type "multipart/form-data". Допускается до трёх файлов
+// в поле "images", каждый размером не более 2 МБ. Файлы отправляются во
+// внешний сервис (ImageService), который сохраняет изображения и возвращает
+// их идентификаторы. После успешной загрузки всех изображений создаётся
+// новый пост с заголовком и описанием, полученными из полей формы.
+//
+// Заголовки безопасности: требует валидный access-токен в куке для
+// идентификации пользователя.
+//
+// Возможные ответы:
+//   - 201: { success: true, data: { "post": post, "image_ids": [...] } }
+//   - 400: различные ошибки валидации (неверный Content-Type, отсутствие файлов,
+//     превышение лимита, слишком большой файл и т.д.)
+//   - 401: некорректный токен
+//   - 500: внутренние ошибки (ImageService недоступен, ошибка создания поста и т.д.)
 func (ctrl *Controller) Upload(c *fiber.Ctx) error {
 	// Проверяем Content-Type
 	contentType := string(c.Request().Header.ContentType())

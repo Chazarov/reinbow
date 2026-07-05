@@ -5,6 +5,17 @@ import (
 	"log"
 )
 
+// Migrate выполняет создание необходимых таблиц в базе данных, если они
+// ещё не существуют. При ошибке создания любой из таблиц программа
+// завершается с фатальной ошибкой.
+//
+// Создаваемые таблицы:
+//   - users (id, username, password, email, created_at)
+//   - post (id, user_id, title, description, created_at)
+//   - image_post (id, post_id, image_id)
+//
+// Таблица refresh_tokens закомментирована, так как в текущей итерации
+// хранение токенов реализовано в памяти.
 func Migrate(db *sql.DB) {
 	log.Println("Создаем таблицы")
 

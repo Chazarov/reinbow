@@ -10,6 +10,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// Signin обрабатывает POST-запрос на вход пользователя.
+//
+// Ожидает JSON с полями username и password. Проверяет существование
+// пользователя в базе и корректность пароля (сравнение с bcrypt-хешем).
+// При успехе генерирует access-токен (срок 5 минут) и refresh-токен
+// (срок 10 минут), устанавливает их в HttpOnly Secure куки.
+// Также отправляет уведомление о входе (notify.NotifyLogin).
+//
+// Возможные ответы:
+//   - 200: { success: true, data: { access_token, refresh_token, user } }
+//   - 400: { success: false, err_message: описание ошибки разбора }
+//   - 401: { success: false, err_message: "Неверное имя пользователя или пароль" }
+//   - 500: { success: false, err_message: "Неверное имя пользователя или пароль" }
+//   - 401: { success: false, err_message: "Ошибка создания access_token" }
+//   - 401: { success: false, err_message: "Ошибка создания refresh_token" }
 func (ctrl *Controller) Signin(c *fiber.Ctx) error {
 	input, parseError := utils.ParseUserData(c, false)
 	if parseError != nil {

@@ -8,6 +8,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+// Refresh обрабатывает GET-запрос на обновление access-токена.
+//
+// Требует наличия валидного refresh-токена в куке `refresh_token`
+// (проверяется middleware.RefreshTokenRequired на уровне маршрута).
+// При успехе генерирует новый access-токен, устанавливает его в куку
+// `access_token` (HttpOnly, SameSite=Strict, срок действия 5 минут) и
+// возвращает объект пользователя вместе с токенами.
+//
+// Возможные ответы:
+//   - 200: { success: true, data: { access_token, refresh_token, user } }
+//   - 401: { success: false, err_message: "Ошибка создания access_token" }
+//   - 500: { success: false, err_message: "Некорректный токен" }
+//   - 500: { success: false, err_message: "Пользователь не существует" }
 func (ctrl *Controller) Refresh(c *fiber.Ctx) error {
 	refreshTokenOld := c.Cookies("refresh_token")
 	userID, userIDError := middleware.ParseToken(refreshTokenOld)
@@ -45,7 +58,7 @@ func (ctrl *Controller) Refresh(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
-			ErrMessage: "Неверное имя пользователя или пароль",
+			ErrMessage: "Пользователь не существует",
 		})
 	}
 
