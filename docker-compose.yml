@@ -19,7 +19,7 @@ services:
     ports:
       - "8070:8070"
     environment:
-      - PUBLIC_HOST=10.64.10.66
+      - PUBLIC_HOST=10.64.10.66:8070
     env_file:
       - fs_backend.env
     depends_on:
