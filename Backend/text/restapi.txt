@@ -1,6 +1,0 @@
-NotifyMessage
-/notify
-{
-    recipent_id int
-    notify_type VARCHAR(50) \ int
-}

@@ -1,0 +1,72 @@
+/* Стили макета */
+
+/* Основной контейнер */
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Центрирование содержимого */
+center {
+    display: block;
+    text-align: center;
+}
+
+/* Таблицы и элементы управления */
+table {
+    width: 100%;
+}
+
+th, td {
+    padding: 12px 8px;
+    text-align: center;
+}
+
+/* Стили для кнопок */
+.btnSaveSettings {
+    width: 180px;
+    height: 45px;
+    margin: 30px 0;
+}
+
+/* Стили для элементов управления */
+.buttonArea {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .container,
+    .containerWebhooks {
+        width: 95%;
+    }
+    
+    .headerArea {
+        width: 95%;
+    }
+    
+    .webhookTable {
+        width: 50%;
+    }
+    
+    .modal_container {
+        width: 80%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+    
+    .url_input {
+        width: 90%;
+    }
+    
+    .table_main th,
+    .table_main td {
+        padding: 8px;
+        font-size: 12px;
+    }
+}

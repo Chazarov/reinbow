@@ -1,25 +1,35 @@
 <!DOCTYPE html>
-<meta charset="UTF-8">
-<html>
+<html lang="ru">
 <head>
+    <meta charset="UTF-8">
     <title>Сервис уведомлений</title>
-    <!-- <link rel="stylesheet" href="styles.css"> -->
+    <!--
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/layout.css">
+    -->
 </head>
 <body>
-    <div class="black_overlay" id="blackBackground"></div>
-    <div class="authorize" id="autorize">
-        <button id="openModalBtn">Авторизоваться</button>
+    <div class="not_Logged" id="not_Logged">
+        <p class="not_logged_text">Для доступа к сервису необходима авторизация!</p><br>
+        <div class="authorize_not_logged" id="autorize">
+            <button id="openModalBtn" class="auth_btn_not_logged">Авторизоваться</button>
+        </div>
     </div>
+    <div class="black_overlay" id="blackBackground"></div>
+    
     <div class="errorNotification" id="notification">
         <div class="typeOfNotification">
             <span class="errorText" id="errText">Ошибка</span>
         </div>
         <span class="errDesc" id="errorDescription">Чето чето</span>
     </div>
+    
     <div class="userAuthorized" id="isAuthorized">
         <p>admin</p>
         <button id="logoutBtn" class="btnLogout">Выйти</button>
     </div>
+    
     <center>
         <div class="headerArea">
             <h2 class="text-bold">Куда отправлять уведомления</h2>
@@ -39,77 +49,63 @@
                                 <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">Регистрация аккаунта</p></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_reg"></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_reg"></td>
-                                <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="webhook_reg"></td>
+                                <td style="border:1px solid transparent; padding:8px;">
+                                    <div class="webhook-multiselect-container" data-notify-type="user_register"></div>
+                                </td>
                             </tr>
                             <tr>
                                 <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">Вход в аккаунт</p></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_login"></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_login"></td>
-                                <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="webhook_login"></td>
+                                <td style="border:1px solid transparent; padding:8px;">
+                                    <div class="webhook-multiselect-container" data-notify-type="user_login"></div>
+                                </td>
                             </tr>
                             <tr>
                                 <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">Решение по проверке фото</p></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_user_imgVerdict"></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_user_imgVerdict"></td>
-                                <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="webhook_user_imgVerdict"></td>
+                                <td style="border:1px solid transparent; padding:8px;">
+                                    <div class="webhook-multiselect-container" data-notify-type="user_imgVerdict"></div>
+                                </td>
                             </tr>
                             <tr>
                                 <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">[admin] Новое фото для модерации</p></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_admin_newImg"></td>
                                 <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_admin_newImg"></td>
-                                <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="webhook_admin_newImg"></td>
+                                <td style="border:1px solid transparent; padding:8px;">
+                                    <div class="webhook-multiselect-container" data-notify-type="admin_newImg"></div>
+                                </td>
                             </tr>
                         </table>
                     </center>
                 </div>
             </div>
         </div>
+        
         <div class="headerArea">
             <h2 class="text-bold">Список Webhook'ов</h2>
         </div>
+        
         <div class="containerWebhooks">
-            <div>
-                <table class="webhookTable">
-                    <tr>
-                        <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;"><p class="text">URL</p></th>
-                        <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;"><p class="text">Уведомления</p></th>
-                    </tr>
-                    <tr>
-                        <td style="border:1px solid transparent; padding:8px; text-align:center"><input type="text" placeholder="Введите URL" class="url_input" id="urlInput"></td>
-                        <td style="border:1px solid transparent; padding:8px; text-align:center; position: relative;">
-                            <!-- Кастомный мультиселект -->
-                            <div class="custom-select" id="webhookSelectContainer">
-                                <div class="select-display">
-                                    <span class="select-placeholder">Ничего не выбрано</span>
-                                    <span class="select-arrow">▾</span>
-                                </div>
-                                <div class="select-options" style="display: none;">
-                                    <label class="option-item">
-                                        <input type="checkbox" value="user_register"> Регистрация аккаунта
-                                    </label>
-                                    <label class="option-item">
-                                        <input type="checkbox" value="user_login"> Вход в аккаунт
-                                    </label>
-                                    <label class="option-item">
-                                        <input type="checkbox" value="admin_newImg"> Фото для модерации
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Скрытый select для совместимости -->
-                            <select multiple id="webhook_select_1" style="display: none;">
-                                <option value="user_register">Регистрация аккаунта</option>
-                                <option value="user_login">Вход в аккаунт</option>
-                                <option value="admin_newImg">Фото для модерации</option>
-                            </select>
-                        </td>
-                    </tr>
+            <div class="webhookList_class">
+                <table class="webhookTable" id="webhookTable">
+                    <thead>
+                        <tr>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="webhookTableBody">
+                        <!-- Строки будут генерироваться динамически -->
+                    </tbody>
                 </table>
             </div>
         </div>
+        
         <div class="buttonArea">
-            <button class="btnSaveSettings" id="saveSettingsBtn">Сохранить настройки</button>
+            <button class="btnSaveSettings" id="saveSettingsBtn">Сохранить изменения</button>
         </div>
+        
         <div class="modal_container" id="modalWindow">
             <div class="krestik" id="closeModalBtn">
                 X
@@ -119,10 +115,10 @@
             <input class="modal_login" id="login_field" type="text"><br>
             <label for="password_field" class="text">Пароль<label><br>
             <input class="modal_password" id="password_field" type="password"><br>
-            <button class="login-btn" id="loginBtn" id="loginBtn">Войти</button><br>
+            <button class="login-btn" id="loginBtn" onclick="loginProcedure()">Войти</button><br>
         </div>
-        </center>
+    </center>
+
+    <script src="bundle.js"></script>
 </body>
 </html>
-
-<script src="bundle.js"></script>

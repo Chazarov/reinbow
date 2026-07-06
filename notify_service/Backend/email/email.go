@@ -1,19 +1,26 @@
 package email
 
+// Пакет email используется для реализации логики отправки уведомлений пользователям
+// на их почту(-ы)
+
 import (
 	"crypto/tls"
-	"fmt"
+	"log"
 	"net/smtp"
 	"strings"
 )
 
+// Структура SmtpDTO нужна для передачи параметров почты, с которой будет
+// вестись рассылка
 type SmtpDTO struct {
-	Email    string
-	Password string
-	Host     string
-	Port     string
+	Email    string // Почта для рассылки
+	Password string // Пароль от почты
+	Host     string // Хост
+	Port     string // Порт
 }
 
+// Функция NewSmtpDTO используется для создания экземпляра структуры NewSmtpDTO
+// Она возращает созданный экземпляр стурктуры NewSmtpDTO
 func NewSmtpDTO(e string, p string, h string, port string) *SmtpDTO {
 	return &SmtpDTO{
 		Email:    e,
@@ -23,6 +30,12 @@ func NewSmtpDTO(e string, p string, h string, port string) *SmtpDTO {
 	}
 }
 
+// Функция SendMessage используется для отправки писем с уведомлениями
+// На вход получаем:
+// receiverEmails - массив из адресов почт, куда придут уведмоения
+// message - текст письма
+// notify_type - тип уведомления
+// На выходе получаем лог об успешности отправки
 func (s SmtpDTO) SendMessage(receiverEmails []string, message []byte, notify_type string) {
 	tlsConfig := &tls.Config{
 		ServerName: s.Host,
@@ -30,39 +43,39 @@ func (s SmtpDTO) SendMessage(receiverEmails []string, message []byte, notify_typ
 
 	conn, err := tls.Dial("tcp", s.Host+":"+s.Port, tlsConfig)
 	if err != nil {
-		fmt.Print("подключение TLS:", err.Error())
+		log.Print("подключение TLS:", err.Error())
 		return
 	}
 	defer conn.Close()
 
 	client, err := smtp.NewClient(conn, s.Host)
 	if err != nil {
-		fmt.Printf("создание клиента: %v", err)
+		log.Printf("создание клиента: %v", err)
 		return
 	}
 	defer client.Quit()
 
 	auth := smtp.PlainAuth("", s.Email, s.Password, s.Host)
 	if err = client.Auth(auth); err != nil {
-		fmt.Printf("аутентификация: %v", err)
+		log.Printf("аутентификация: %v", err)
 		return
 	}
 
 	if err = client.Mail(s.Email); err != nil {
-		fmt.Printf("отправитель: %v", err)
+		log.Printf("отправитель: %v", err)
 		return
 	}
 
 	for _, rcpt := range receiverEmails {
 		if err = client.Rcpt(rcpt); err != nil {
-			fmt.Printf("получатель %s: %v", rcpt, err)
+			log.Printf("получатель %s: %v", rcpt, err)
 			return
 		}
 	}
 
 	w, err := client.Data()
 	if err != nil {
-		fmt.Printf("открытие Data: %v", err)
+		log.Printf("открытие Data: %v", err)
 		return
 	}
 	defer w.Close()
@@ -91,7 +104,7 @@ func (s SmtpDTO) SendMessage(receiverEmails []string, message []byte, notify_typ
 
 	_, err = w.Write(byte_temp_message)
 	if err != nil {
-		fmt.Printf("запись письма: %v", err)
+		log.Printf("запись письма: %v", err)
 		return
 	}
 }

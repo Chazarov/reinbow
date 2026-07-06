@@ -13,6 +13,5 @@ CREATE TABLE IF NOT EXISTS notify_type_message (
     notify_type VARCHAR(200) UNIQUE,
     want_telegram BOOLEAN,
     want_email BOOLEAN,
-    want_webhook BOOLEAN,
-    webhook_url VARCHAR(500)
+    want_webhook TEXT[]
 )
