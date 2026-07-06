@@ -104,8 +104,8 @@ export function createPost(post) {
 
     const tools = `
         <div class="imageTools">
-            <span onClick="prevImage(${post.id})" class="imageBtn imagePrev">&larr;</span>
-            <span onClick="nextImage(${post.id})" class="imageBtn imageNext">&rarr;</span>
+            <span onClick="prevImage(${post.id})" class="imageBtn imagePrev"><span class="fa fa-arrow-left"></span></span>
+            <span onClick="nextImage(${post.id})" class="imageBtn imageNext"><span class="fa fa-arrow-right"></span>
         </div>`
 
 
