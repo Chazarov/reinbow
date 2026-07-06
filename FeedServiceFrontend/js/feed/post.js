@@ -128,9 +128,10 @@ export function createPostsHandlers() {
 
     document.querySelectorAll('.post-author').forEach(el => {
         el.addEventListener('click', (e) => {
+            const user = getSavedUser()
             const userId = e.target.dataset.userId;
             if (userId) {
-                loadUserFeed(parseInt(userId));
+                if(user && user.is_confirmed) loadUserFeed(parseInt(userId));
             }
         });
     });
