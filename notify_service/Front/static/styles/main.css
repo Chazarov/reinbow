@@ -417,11 +417,14 @@ input[type="checkbox"] {
     border-radius: 8px;
     overflow: hidden;
     background-color: rgba(255, 0, 0, 0.9);
-    width: 200px;
-    height: 100px;
-    transition: transform 0.5s ease-in-out;
+    min-width: 200px;
+    max-width: 500px;
+    width: auto;
+    padding: 12px 20px;
     z-index: 3;
     box-shadow: 0 4px 8px var(--shadow-color);
+    word-wrap: break-word;
+    box-sizing: border-box;
 }
 
 .typeOfNotification {
@@ -438,10 +441,10 @@ input[type="checkbox"] {
 }
 
 .errDesc {
-    display: flex;
+    display: block;
     margin-top: 8px;
-    margin-left: 12px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     font-size: 16px;
     color: white;
+    word-wrap: break-word;
 }

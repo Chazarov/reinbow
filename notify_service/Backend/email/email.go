@@ -90,7 +90,7 @@ func (s SmtpDTO) SendMessage(receiverEmails []string, message []byte, notify_typ
 		topic = "Новое изображение для модерации"
 	case "user_imgVerdict":
 		topic = "Модерация вашего поста"
-	case "user_email_confirmation":
+	case "user_confirm":
 		topic = "Подтверждение почты"
 	default:
 		topic = "Служебное сообщение"

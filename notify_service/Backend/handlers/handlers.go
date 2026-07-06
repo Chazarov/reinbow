@@ -68,10 +68,11 @@ type Recipent struct {
 
 // Структура NotifyTypeMessenger сдержит данные, куда отправлять конкретный тип уведомлений
 type NotifyTypeMessenger struct {
-	NotifyType   string   `json:"notify_type"`   // Тип уведмоления
-	WantEmail    bool     `json:"want_email"`    // Отправляем ли на почту
-	WantTelegram bool     `json:"want_telegram"` // Отправляем ли в телеграм
-	WebhookUrls  []string `json:"webhook_urls"`  // массив URL
+	NotifyType   string   `json:"notify_type"`        // Тип уведмоления
+	Description  string   `json:"notify_description"` // Описание уведомления
+	WantEmail    bool     `json:"want_email"`         // Отправляем ли на почту
+	WantTelegram bool     `json:"want_telegram"`      // Отправляем ли в телеграм
+	WebhookUrls  []string `json:"webhook_urls"`       // массив URL
 }
 
 // Структура NotifyTypeMessengerList нужна для хранения данных, полученных с сайта
@@ -315,17 +316,18 @@ func (d DTO) HandleSaveSettingsCheckmarks(w http.ResponseWriter, r *http.Request
 	// После того как получили данные записываем их в базу, не создавая дубликаты
 	for _, elem := range json_list.Data {
 		fmt.Println("Читаю:", elem)
-		query := `INSERT INTO notify_type_message (notify_type, want_telegram, want_email, want_webhook)
-    		VALUES ($1, $2, $3, $4)
+		query := `INSERT INTO notify_type_message (notify_type, notify_description, want_telegram, want_email, want_webhook)
+    		VALUES ($1, $2, $3, $4, $5)
     		ON CONFLICT (notify_type) DO UPDATE SET
+			notify_description = EXCLUDED.notify_description,
         	want_telegram = EXCLUDED.want_telegram,
         	want_email = EXCLUDED.want_email,
 			want_webhook = EXCLUDED.want_webhook;`
 
-		_, err := sql_conn.Exec(context.Background(), query, elem.NotifyType, elem.WantTelegram, elem.WantEmail, elem.WebhookUrls)
+		_, err := sql_conn.Exec(context.Background(), query, elem.NotifyType, elem.Description, elem.WantTelegram, elem.WantEmail, elem.WebhookUrls)
 		if err != nil {
 			response.Success = false
-			response.Error_message = "Ошибка при вставке данных в базу" + err.Error()
+			response.Error_message = "Ошибка при вставке данных в базу. " + err.Error()
 			respBytes, _ := json.MarshalIndent(response, "", "    ")
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Println(response.Error_message)
@@ -376,11 +378,11 @@ func (d DTO) HandleGetNotifySettings(w http.ResponseWriter, r *http.Request) {
 	var json_list = make([]NotifyTypeMessenger, 0)
 	sql_conn := d.sql_connection
 
-	query := `SELECT notify_type, want_telegram, want_email, want_webhook FROM notify_type_message`
+	query := `SELECT notify_type, notify_description, want_telegram, want_email, want_webhook FROM notify_type_message`
 	rows, err := sql_conn.Query(context.Background(), query)
 	if err != nil {
 		response.Success = false
-		response.Error_message = "Ошибка при выборе данных из базы" + err.Error()
+		response.Error_message = "Ошибка при выборе данных из базы. " + err.Error()
 		respBytes, _ := json.MarshalIndent(response, "", "    ")
 		w.WriteHeader(http.StatusInternalServerError)
 		if _, err := w.Write(respBytes); err != nil {
@@ -393,13 +395,14 @@ func (d DTO) HandleGetNotifySettings(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var notify_type string
+		var notify_description string
 		var want_email bool
 		var want_telegram bool
 		var webhook_urls []string
-		if err := rows.Scan(&notify_type, &want_telegram, &want_email, &webhook_urls); err != nil {
+		if err := rows.Scan(&notify_type, &notify_description, &want_telegram, &want_email, &webhook_urls); err != nil {
 			fmt.Println(err)
 			response.Success = false
-			response.Error_message = "Ошибка при обходе базы данных" + err.Error()
+			response.Error_message = "Ошибка при обходе базы данных. " + err.Error()
 			respBytes, _ := json.MarshalIndent(response, "", "    ")
 			w.WriteHeader(http.StatusInternalServerError)
 			if _, err := w.Write(respBytes); err != nil {
@@ -409,6 +412,7 @@ func (d DTO) HandleGetNotifySettings(w http.ResponseWriter, r *http.Request) {
 		}
 		json_list = append(json_list, NotifyTypeMessenger{
 			NotifyType:   notify_type,
+			Description:  notify_description,
 			WantEmail:    want_email,
 			WantTelegram: want_telegram,
 			WebhookUrls:  webhook_urls,
@@ -476,7 +480,7 @@ func (d DTO) HandleModeratorLogin(w http.ResponseWriter, r *http.Request) {
 
 		var response ResponseData
 		response.Success = false
-		response.Error_message = errs.ErrJsonUnmarshal + ":" + err.Error()
+		response.Error_message = errs.ErrJsonUnmarshal + ": " + err.Error()
 		response_byte, _ := json.MarshalIndent(response, "", "    ")
 		fmt.Println(response.Error_message)
 		w.WriteHeader(http.StatusBadRequest)

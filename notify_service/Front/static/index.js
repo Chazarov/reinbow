@@ -1,7 +1,13 @@
 import './styles/main.css';
 import './styles/layout.css';
 import './styles/components.css';
+
 let isSaving = false;
+let customRows = [];
+let editingRowId = null;
+
+// Массив предопределенных типов для отслеживания
+const predefinedTypes = ["user_register", "user_login", "admin_newImg", "user_imgVerdict"];
 
 (function initNotifications() {    
     const HEIGHT = 80;             
@@ -53,9 +59,10 @@ let isSaving = false;
         clone.style.display = 'block';
         clone.style.position = 'fixed';
         clone.style.left = LEFT_OFFSET;
-        clone.style.width = CONTAINER_WIDTH;
-        clone.style.height = HEIGHT + 'px';
-        clone.style.margin = '0';
+        clone.style.width = 'auto';
+        clone.style.maxWidth = '500px';
+        clone.style.minWidth = '200px';
+        clone.style.padding = '12px 20px';
         clone.style.borderRadius = '5px';
         clone.style.overflow = 'hidden';
         clone.style.zIndex = '2';
@@ -97,42 +104,57 @@ async function GetSettings() {
         const result = await response.json();
         console.log('Result:', result);
 
-        // Проверяем, что data существует и это массив
+        // Очищаем пользовательские строки
+        customRows = [];
+
         if (!result.data || !Array.isArray(result.data)) {
             console.log("No data or invalid data format");
             renderWebhookTable();
+            renderCustomRows();
             return;
         }
 
         const data = result.data;
 
-        // Восстанавливаем чекбоксы Telegram и Email
+        // Обрабатываем предопределенные типы
         data.forEach((item) => {
-            const notify_type = item.notify_type;
-            const want_email = item.want_email;
-            const want_telegram = item.want_telegram;
+            if (predefinedTypes.includes(item.notify_type)) {
+                const notify_type = item.notify_type;
+                const want_email = item.want_email;
+                const want_telegram = item.want_telegram;
 
-            switch (notify_type) {
-                case "user_register":
-                    document.getElementById('email_reg').checked = want_email;
-                    document.getElementById('tg_reg').checked = want_telegram;
-                    break;
-                case "user_login":
-                    document.getElementById('email_login').checked = want_email;
-                    document.getElementById('tg_login').checked = want_telegram;
-                    break;
-                case "admin_newImg":
-                    document.getElementById('email_admin_newImg').checked = want_email;
-                    document.getElementById('tg_admin_newImg').checked = want_telegram;
-                    break;
-                case "user_imgVerdict":
-                    document.getElementById('email_user_imgVerdict').checked = want_email;
-                    document.getElementById('tg_user_imgVerdict').checked = want_telegram;
-                    break;
+                switch (notify_type) {
+                    case "user_register":
+                        document.getElementById('email_reg').checked = want_email;
+                        document.getElementById('tg_reg').checked = want_telegram;
+                        break;
+                    case "user_login":
+                        document.getElementById('email_login').checked = want_email;
+                        document.getElementById('tg_login').checked = want_telegram;
+                        break;
+                    case "admin_newImg":
+                        document.getElementById('email_admin_newImg').checked = want_email;
+                        document.getElementById('tg_admin_newImg').checked = want_telegram;
+                        break;
+                    case "user_imgVerdict":
+                        document.getElementById('email_user_imgVerdict').checked = want_email;
+                        document.getElementById('tg_user_imgVerdict').checked = want_telegram;
+                        break;
+                }
+            } else {
+                // Добавляем как пользовательскую строку
+                customRows.push({
+                    id: Date.now() + Math.random(),
+                    notify_type: item.notify_type,
+                    description: item.notify_description || item.notify_type,
+                    want_email: item.want_email,
+                    want_telegram: item.want_telegram,
+                    webhook_urls: item.webhook_urls || []
+                });
             }
         });
 
-        // 1. Собираем все уникальные URL и восстанавливаем webhookSelections
+        // Собираем все уникальные URL
         const allUrls = [];
         data.forEach(item => {
             const urls = item.webhook_urls || [];
@@ -147,19 +169,21 @@ async function GetSettings() {
         });
         webhookUrls = allUrls;
 
-        // 2. Пересоздаём мультиселекты
+        // Пересоздаём мультиселекты
         multiselectInstances = [];
         initAllMultiselects();
 
-        // 3. Рендерим таблицу URL
+        // Рендерим таблицу URL и пользовательские строки
         renderWebhookTable();
+        renderCustomRows();
 
-        // 4. Обновляем отображение мультиселектов
+        // Обновляем отображение мультиселектов
         updateAllMultiselects();
 
     } catch (error) {
         console.error('Error:', error);
         renderWebhookTable();
+        renderCustomRows();
     }
 }
 
@@ -178,41 +202,57 @@ async function CompleteSetup() {
         return;
     }
 
-    // ... после проверки isLogged
-
+    // Базовые данные для предопределенных типов
     let payload = {
-        "data": [
-            {
-                "notify_type": "user_register",
-                "want_email": document.getElementById('email_reg').checked,
-                "want_telegram": document.getElementById('tg_reg').checked,
-                "webhook_urls": webhookSelections['user_register'] || []
-            },
-            {
-                "notify_type": "user_login",
-                "want_email": document.getElementById('email_login').checked,
-                "want_telegram": document.getElementById('tg_login').checked,
-                "webhook_urls": webhookSelections['user_login'] || []
-            },
-            {
-                "notify_type": "admin_newImg",
-                "want_email": document.getElementById('email_admin_newImg').checked,
-                "want_telegram": document.getElementById('tg_admin_newImg').checked,
-                "webhook_urls": webhookSelections['admin_newImg'] || []
-            },
-            {
-                "notify_type": "user_imgVerdict",
-                "want_email": document.getElementById('email_user_imgVerdict').checked,
-                "want_telegram": document.getElementById('tg_user_imgVerdict').checked,
-                "webhook_urls": webhookSelections['user_imgVerdict'] || []
-            }
-        ]
+        "data": []
     };
 
+    // Добавляем предопределенные типы
+    predefinedTypes.forEach(type => {
+        let emailId, tgId;
+        switch(type) {
+            case "user_register":
+                emailId = 'email_reg';
+                tgId = 'tg_reg';
+                break;
+            case "user_login":
+                emailId = 'email_login';
+                tgId = 'tg_login';
+                break;
+            case "admin_newImg":
+                emailId = 'email_admin_newImg';
+                tgId = 'tg_admin_newImg';
+                break;
+            case "user_imgVerdict":
+                emailId = 'email_user_imgVerdict';
+                tgId = 'tg_user_imgVerdict';
+                break;
+        }
+
+        payload.data.push({
+            "notify_type": type,
+            "want_email": document.getElementById(emailId).checked,
+            "want_telegram": document.getElementById(tgId).checked,
+            "webhook_urls": webhookSelections[type] || []
+        });
+    });
+
+    // Добавляем пользовательские строки
+    customRows.forEach(row => {
+        if (row.notify_type && row.description) {
+            payload.data.push({
+                "notify_type": row.notify_type,
+                "notify_description": row.description,
+                "want_email": row.want_email,
+                "want_telegram": row.want_telegram,
+                "webhook_urls": webhookSelections[row.notify_type] || []
+            });
+        }
+    });
+
+    console.log("Final payload:", JSON.stringify(payload, null, 2));
+
     try {
-
-        console.log("payload:", payload)
-
         const response = await fetchWithAuth("/api/notify_types", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -284,13 +324,10 @@ function createMultiselect(container, notifyType) {
             label.appendChild(document.createTextNode(url));
 
             label.addEventListener('click', function(e) {
-                // Предотвращаем двойное срабатывание (чтобы не вызвать обработчик дважды)
                 e.preventDefault();
                 const checkbox = this.querySelector('input[type="checkbox"]');
                 if (checkbox) {
-                    // Переключаем состояние чекбокса
                     checkbox.checked = !checkbox.checked;
-                    // Вручную обновляем webhookSelections
                     const selected = webhookSelections[notifyType];
                     const url = checkbox.value;
                     if (checkbox.checked) {
@@ -301,7 +338,6 @@ function createMultiselect(container, notifyType) {
                         const idx = selected.indexOf(url);
                         if (idx !== -1) selected.splice(idx, 1);
                     }
-                    // Обновляем отображение (placeholder)
                     updateDisplayText();
                 }
             });
@@ -565,6 +601,7 @@ function renderWebhookTable() {
             saveBtn.textContent = '✓';
             saveBtn.style.display = 'none';
             saveBtn.title = 'Сохранить новый URL';
+            saveBtn.style.marginLeft = '5px';
 
             input.addEventListener('input', function() {
                 saveBtn.style.display = this.value.trim() ? 'inline-flex' : 'none';
@@ -589,6 +626,7 @@ function renderWebhookTable() {
                 saveEditBtn.className = 'webhook-action-btn save';
                 saveEditBtn.textContent = '✓';
                 saveEditBtn.title = 'Сохранить изменения';
+                saveEditBtn.style.marginLeft = '5px';
                 saveEditBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     const val = input.value.trim();
@@ -608,6 +646,7 @@ function renderWebhookTable() {
                 editBtn.className = 'webhook-action-btn edit';
                 editBtn.textContent = '✎';
                 editBtn.title = 'Редактировать URL';
+                editBtn.style.marginRight = '5px';
                 editBtn.addEventListener('click', function(e) {
                     e.stopPropagation();
                     editingIndex = row.index;
@@ -648,12 +687,276 @@ function renderWebhookTable() {
     updateAllMultiselects();
 }
 
+// Функция для добавления пользовательской строки
+function addCustomRow() {
+    const newRow = {
+        id: Date.now() + Math.random(),
+        notify_type: '',
+        description: '',
+        want_email: false,
+        want_telegram: false,
+        webhook_urls: [],
+        isNew: true
+    };
+    
+    customRows.push(newRow);
+    console.log('Добавлена строка, customRows теперь:', customRows);
+    editingRowId = newRow.id;
+    renderCustomRows();
+    
+    // Фокус на первое поле ввода
+    setTimeout(() => {
+        const firstInput = document.querySelector(`tr[data-id="${newRow.id}"] input`);
+        if (firstInput) firstInput.focus();
+    }, 100);
+}
+
+// Функция для удаления пользовательской строки
+function deleteCustomRow(id) {
+    customRows = customRows.filter(row => row.id !== id);
+    renderCustomRows();
+}
+
+// Функция для удаления предопределенного параметра
+function deletePredefinedRow(notifyType) {
+    customRows = customRows.filter(row => row.notify_type !== notifyType);
+    delete webhookSelections[notifyType];
+    showNotification('success', 'Удалено', 'Параметр удален');
+    renderCustomRows();
+}
+
+// Функция для обновления значения в пользовательской строке (без перерисовки)
+function updateCustomRow(id, field, value) {
+    const row = customRows.find(r => r.id === id);
+    if (row) {
+        row[field] = value;
+        if (field === 'notify_type' && !row.webhook_urls) {
+            row.webhook_urls = [];
+        }
+    }
+}
+
+// Функция отрисовки пользовательских строк
+function renderCustomRows() {
+    const table = document.querySelector('.table_main');
+    
+    // Удаляем существующие пользовательские строки
+    const existingCustomRows = document.querySelectorAll('.custom-row');
+    existingCustomRows.forEach(row => row.remove());
+    
+    // Добавляем пользовательские строки
+    customRows.forEach((row) => {
+        const tr = document.createElement('tr');
+        tr.className = 'custom-row';
+        tr.dataset.id = row.id;
+        
+        // Ячейка с названием
+        const nameCell = document.createElement('td');
+        nameCell.style.border = '1px solid transparent';
+        nameCell.style.padding = '8px';
+        nameCell.style.textAlign = 'left';
+        
+        if (row.isNew || editingRowId === row.id) {
+            // Режим редактирования - показываем поля ввода
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'custom-row-input';
+            nameInput.placeholder = 'Введите название';
+            nameInput.value = row.description || '';
+            nameInput.addEventListener('input', (e) => {
+                updateCustomRow(row.id, 'description', e.target.value);
+            });
+            nameCell.appendChild(nameInput);
+        } else {
+            // Режим просмотра - показываем текст
+            const nameText = document.createElement('span');
+            nameText.textContent = row.description || '';
+            nameCell.appendChild(nameText);
+        }
+        
+        // Ячейка с ID параметра
+        const idCell = document.createElement('td');
+        idCell.style.border = '1px solid transparent';
+        idCell.style.padding = '8px';
+        idCell.style.textAlign = 'left';
+        
+        if (row.isNew || editingRowId === row.id) {
+            const idInput = document.createElement('input');
+            idInput.type = 'text';
+            idInput.className = 'custom-row-input';
+            idInput.placeholder = 'Введите ID';
+            idInput.value = row.notify_type || '';
+            idInput.addEventListener('input', (e) => {
+                updateCustomRow(row.id, 'notify_type', e.target.value);
+            });
+            idCell.appendChild(idInput);
+        } else {
+            const idText = document.createElement('span');
+            idText.textContent = row.notify_type || '';
+            idCell.appendChild(idText);
+        }
+        
+        // Ячейка Telegram
+        const tgCell = document.createElement('td');
+        tgCell.style.border = '1px solid transparent';
+        tgCell.style.padding = '8px';
+        const tgCheckbox = document.createElement('input');
+        tgCheckbox.type = 'checkbox';
+        tgCheckbox.checked = row.want_telegram;
+        tgCheckbox.addEventListener('change', (e) => {
+            updateCustomRow(row.id, 'want_telegram', e.target.checked);
+        });
+        tgCell.appendChild(tgCheckbox);
+        
+        // Ячейка Email
+        const emailCell = document.createElement('td');
+        emailCell.style.border = '1px solid transparent';
+        emailCell.style.padding = '8px';
+        const emailCheckbox = document.createElement('input');
+        emailCheckbox.type = 'checkbox';
+        emailCheckbox.checked = row.want_email;
+        emailCheckbox.addEventListener('change', (e) => {
+            updateCustomRow(row.id, 'want_email', e.target.checked);
+        });
+        emailCell.appendChild(emailCheckbox);
+        
+        // Ячейка Webhook
+        const webhookCell = document.createElement('td');
+        webhookCell.style.border = '1px solid transparent';
+        webhookCell.style.padding = '8px';
+        const webhookContainer = document.createElement('div');
+        webhookContainer.className = 'webhook-multiselect-container';
+        webhookContainer.dataset.notifyType = row.notify_type || `custom_${row.id}`;
+        webhookContainer.style.minWidth = '200px';
+        webhookCell.appendChild(webhookContainer);
+        
+        // Ячейка с кнопками действий
+        const actionsCell = document.createElement('td');
+        actionsCell.style.border = '1px solid transparent';
+        actionsCell.style.padding = '8px';
+        actionsCell.style.textAlign = 'center';
+        
+        const actionsContainer = document.createElement('div');
+        actionsContainer.className = 'actions-container';
+        
+        if (row.isNew || editingRowId === row.id) {
+            // Кнопка сохранения
+            const saveBtn = document.createElement('button');
+            saveBtn.className = 'webhook-action-btn save';
+            saveBtn.textContent = '✓';
+            saveBtn.title = row.isNew ? 'Добавить параметр' : 'Сохранить изменения';
+            saveBtn.style.marginLeft = '5px';
+            
+            saveBtn.addEventListener('click', () => {
+                console.log('Сохранение, customRows до:', customRows);
+                if (row.isNew) {
+                    if (!row.notify_type || !row.description) {
+                        showNotification('error', 'Ошибка', 'Заполните все поля');
+                        return;
+                    }
+                    delete row.isNew;
+                    editingRowId = null;
+                    showNotification('success', 'Добавлено', 'Параметр добавлен');
+                } else {
+                    editingRowId = null;
+                    showNotification('success', 'Сохранено', 'Изменения сохранены');
+                }
+                renderCustomRows();
+                console.log('customRows после сохранения:', customRows);
+            });
+            
+            actionsContainer.appendChild(saveBtn);
+        } else {
+            // Кнопки редактирования и удаления
+            const editBtn = document.createElement('button');
+            editBtn.className = 'webhook-action-btn edit';
+            editBtn.textContent = '✎';
+            editBtn.title = 'Редактировать';
+            editBtn.style.marginRight = '5px';
+            editBtn.addEventListener('click', () => {
+                editingRowId = row.id;
+                renderCustomRows();
+            });
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'webhook-action-btn delete';
+            deleteBtn.textContent = '✕';
+            deleteBtn.title = 'Удалить';
+            deleteBtn.addEventListener('click', () => {
+                if (confirm(`Вы уверены, что хотите удалить параметр "${row.description}"?`)) {
+                    deleteCustomRow(row.id);
+                    showNotification('success', 'Удалено', 'Параметр удален');
+                }
+            });
+            
+            actionsContainer.appendChild(editBtn);
+            actionsContainer.appendChild(deleteBtn);
+        }
+        
+        actionsCell.appendChild(actionsContainer);
+        
+        tr.appendChild(nameCell);
+        tr.appendChild(idCell);
+        tr.appendChild(tgCell);
+        tr.appendChild(emailCell);
+        tr.appendChild(webhookCell);
+        tr.appendChild(actionsCell);
+        
+        table.appendChild(tr);
+        
+        // Создаем мультиселект для этой строки
+        setTimeout(() => {
+            if (!webhookSelections[webhookContainer.dataset.notifyType]) {
+                webhookSelections[webhookContainer.dataset.notifyType] = row.webhook_urls || [];
+            }
+            const instance = createMultiselect(webhookContainer, webhookContainer.dataset.notifyType);
+            multiselectInstances.push({ 
+                notifyType: webhookContainer.dataset.notifyType, 
+                instance 
+            });
+        }, 0);
+    });
+    
+    // Добавляем обработчики для предопределенных строк
+    setTimeout(() => {
+        const editButtons = document.querySelectorAll('.webhook-action-btn.edit[data-notify-type]');
+        editButtons.forEach(button => {
+            // Проверяем, не добавлен ли уже обработчик
+            if (!button.hasAttribute('data-handler-added')) {
+                button.setAttribute('data-handler-added', 'true');
+                button.addEventListener('click', function() {
+                    const notifyType = this.dataset.notifyType;
+                    showNotification('info', 'Информация', `Редактирование параметра ${notifyType} пока не реализовано для предопределенных строк`);
+                });
+            }
+        });
+    }, 100);
+}
+
 let isLogged = false;
 restoreAuthState();
 
 // Добавляем обработчики событий (гарантируем однократное выполнение)
 if (!window._listenersAdded) {
     window._listenersAdded = true;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const addCustomRowBtn = document.getElementById('addCustomRowBtn');
+        if (addCustomRowBtn) {
+            addCustomRowBtn.addEventListener('click', addCustomRow);
+        }
+        
+        // Добавляем обработчики для кнопок удаления предопределенных строк
+        const deleteButtons = document.querySelectorAll('.delete-row-btn');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const notifyType = this.dataset.notifyType;
+                if (notifyType && confirm(`Вы уверены, что хотите удалить параметр ${notifyType}?`)) {
+                    deletePredefinedRow(notifyType);
+                }
+            });
+        });
+    });
 
     const openModalBtn = document.getElementById('openModalBtn');
     if (openModalBtn) openModalBtn.addEventListener('click', openModal);
@@ -670,3 +973,8 @@ if (!window._listenersAdded) {
     const saveBtn = document.getElementById('saveSettingsBtn');
     if (saveBtn) saveBtn.addEventListener('click', CompleteSetup);
 }
+
+// Для просмотра из консоли
+window.customRows = customRows;
+window.predefinedTypes = predefinedTypes;
+window.webhookSelections = webhookSelections;

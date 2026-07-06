@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS client (
 CREATE TABLE IF NOT EXISTS notify_type_message (
     id SERIAL PRIMARY KEY,
     notify_type VARCHAR(200) UNIQUE,
+    notify_description VARCHAR(200),
     want_telegram BOOLEAN,
     want_email BOOLEAN,
     want_webhook TEXT[]
