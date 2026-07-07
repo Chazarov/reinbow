@@ -12,7 +12,7 @@ export PGPASSWORD="123"
 
 psql -h "$HOST" -p "$PORT" -U "$USER" -d "$DB" <<'EOF'
 -- Очищаем всё связанное каскадно
-TRUNCATE post, image_post, refresh_tokens, users RESTART IDENTITY CASCADE;
+TRUNCATE post, image_post, users RESTART IDENTITY CASCADE;
 
 DO $$
 DECLARE
@@ -28,8 +28,7 @@ BEGIN
         VALUES (
             'user' || i,
             'password',                     -- заглушка, пароль не хэширован
-            'user' || i || '@example.com',
-            NULL                             -- tg_chat_id не обязателен
+            'user' || i || '@example.com'
         );
     END LOOP;
 

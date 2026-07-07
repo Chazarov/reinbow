@@ -90,3 +90,21 @@ func SetTokens(c *fiber.Ctx, accessToken string, refreshToken string) error {
 
 	return nil
 }
+
+func GetSMTPData() (map[string]string, error) {
+	smtpHost := GetEnv("SMTP_HOST", "")
+	smtpPort := GetEnv("SMTP_PORT", "")
+	smtpEmail := GetEnv("SMTP_EMAIL", "")
+	smtpPassword := GetEnv("SMTP_PASSWORD", "")
+
+	if smtpHost == "" || smtpPort == "" || smtpEmail == "" || smtpPassword == "" {
+		return nil, fmt.Errorf("Уведомления отключены. Обратитесь к администратору сайта")
+	}
+
+	return map[string]string{
+		"SMTP_HOST":     smtpHost,
+		"SMTP_PORT":     smtpPort,
+		"SMTP_EMAIL":    smtpEmail,
+		"SMTP_PASSWORD": smtpPassword,
+	}, nil
+}

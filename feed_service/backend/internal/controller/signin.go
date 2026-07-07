@@ -2,7 +2,6 @@ package controller
 
 import (
 	"log"
-	"traineesheep/feedservice/internal/client/notify"
 	"traineesheep/feedservice/internal/middleware"
 	"traineesheep/feedservice/internal/utils"
 
@@ -79,8 +78,6 @@ func (ctrl *Controller) Signin(c *fiber.Ctx) error {
 
 	// Устанавливаем refresh_token и access_token в HttpOnly Secure куку
 	utils.SetTokens(c, accessToken, refreshToken)
-
-	notify.NotifyLogin(input.Username, input.Email)
 
 	log.Printf("POST /signin: Пользователь %s вошел в аккаунт", user.Username)
 	// Успех – возвращаем токен

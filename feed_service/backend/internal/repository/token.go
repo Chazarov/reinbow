@@ -19,10 +19,8 @@ func NewTokenDAO(db *sql.DB) *TokenDAO {
 
 // DeleteToken удаляет переданный refresh-токен из базы данных.
 // В текущей версии приложения инвалидация токенов не реализована
-// (см. todo), поэтому метод всегда возвращает nil.
+// поэтому метод всегда возвращает nil.
 func (td *TokenDAO) DeleteToken(token string) error {
-	// todo инвалидация токена. В текущей итерации проекта смысла в этом нет
-	// _, err := td.db.Exec("DELETE FROM refresh_tokens WHERE token = $1", token)
 	return nil
 }
 

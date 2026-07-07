@@ -7,10 +7,11 @@ services:
     ports:
       - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy # ждём, пока backend станет healthy
     networks:
       - feedservice-network
-  
+
   backend:
     restart: unless-stopped
     build:
@@ -23,7 +24,14 @@ services:
     env_file:
       - fs_backend.env
     depends_on:
-      - db
+      db:
+        condition: service_healthy # ждём, пока БД будет готова принимать подключения
+    healthcheck: # проверка готовности самого бэкенда
+      test: ["CMD", "curl", "-f", "http://localhost:8070/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     networks:
       - feedservice-network
 
@@ -37,6 +45,12 @@ services:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck: # проверка готовности PostgreSQL
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
     networks:
       - feedservice-network
 

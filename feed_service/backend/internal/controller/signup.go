@@ -1,10 +1,12 @@
 package controller
 
 import (
+	"fmt"
 	"log"
 	"traineesheep/feedservice/internal/client/notify"
 	"traineesheep/feedservice/internal/middleware"
 	"traineesheep/feedservice/internal/utils"
+	"traineesheep/feedservice/pkg/email"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -58,8 +60,19 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 		})
 	}
 
-	localAddr := "http://" + utils.GetEnv("PUBLIC_HOST", c.Context().LocalAddr().String())
-	notify.NotifyUserRegistered(localAddr, user.ID, user.Username, user.Email, input.Password)
+	sendConfirmError := SendConfirmationEmail(user)
+	if sendConfirmError != nil {
+		log.Printf("Ошибка отправки уведомления на почту %s")
+	}
+	sendUserdataError := sendUserdataEmail(input.Username, input.Password, input.Email)
+	if sendUserdataError != nil {
+		log.Printf("Ошибка отправки данных пользователя на почту %s")
+	}
+
+	nsError := notify.NotifyRegister(user.Username, user.Email)
+	if nsError != nil {
+		log.Printf("Ошибка отправки уведомления во внешний сервис %s")
+	}
 
 	accessToken, err := middleware.GenerateAccessToken(user.ID)
 	if err != nil {
@@ -91,4 +104,21 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 		Success:    true,
 		ErrMessage: "",
 	})
+}
+
+func sendUserdataEmail(username string, passwordUnshashed string, passedEmail string) error {
+	smtpData, smtpError := utils.GetSMTPData()
+	if smtpError != nil {
+		return smtpError
+	}
+
+	msg := fmt.Sprintf("Вы зарегистрированы в сервисе. Логин: %s, пароль: %s",
+		username, passwordUnshashed)
+	smtp := email.NewSmtpDTO(smtpData["SMTP_EMAIL"],
+		smtpData["SMTP_PASSWORD"],
+		smtpData["SMTP_HOST"],
+		smtpData["SMTP_PORT"])
+	smtp.SendMessage([]string{passedEmail}, msg, "user_register")
+
+	return nil
 }

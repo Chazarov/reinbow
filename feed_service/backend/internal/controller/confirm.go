@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func (ctrl *Controller) Confrim(c *fiber.Ctx) error {
+func (ctrl *Controller) Confirm(c *fiber.Ctx) error {
 	token := c.Query("token")
 
 	userID, userParseError := middleware.ParseToken(token)
@@ -32,9 +32,5 @@ func (ctrl *Controller) Confrim(c *fiber.Ctx) error {
 	}
 
 	log.Printf("GET /confirm: Аккаунт с user_id=%d подтвержден", userID)
-	return c.JSON(utils.ApiResponse{
-		Data:       "Ваш аккаунт подтвержден",
-		Success:    true,
-		ErrMessage: "",
-	})
+	return c.Redirect("/")
 }

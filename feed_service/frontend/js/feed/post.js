@@ -1,6 +1,6 @@
 import { getSavedUser } from '../index.js';
 import { loadUserFeedById } from '../feed/feed.js';
-
+import noImage from '../../img/noimage.png';
 /**
  * Переключает видимость изображений в слайдере поста на предыдущее.
  *
@@ -133,7 +133,7 @@ export function createPostsHandlers() {
     // Ловим все ошибки загрузки картинок на странице на фазе перехвата
     document.addEventListener('error', (event) => {
         if (event.target.tagName.toLowerCase() === 'img') {
-            event.target.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSPshUBFBR7xshIaXFc_ir-eagtAueBv7aX5Nvxdny6qg&amp;s'; // Подставляем заглушку
+            event.target.src = noImage; // Подставляем заглушку
         }
     }, true); // <- Важно: true включает перехват (capture)
 

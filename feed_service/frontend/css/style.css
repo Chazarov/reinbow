@@ -74,10 +74,18 @@ body {
     margin-top: 5px;
 }
 
+.btn .processing {
+    display: none;
+}
+
 .btn-primary {
     background-color: var(--primary);
     color: white;
     border-color: var(--primary);
+}
+
+.btn-primary:disabled .processing {
+    display: inline-block;
 }
 
 .btn-primary:disabled, .btn-primary:disabled:hover {

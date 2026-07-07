@@ -45,16 +45,6 @@ func Migrate(db *sql.DB) {
 			image_id INT NOT NULL
 	);`
 
-	// todo в текущей итерации приложения это лишнее
-	/*createRefreshTokenTable := `
-		CREATE TABLE IF NOT EXISTS refresh_tokens (
-		id SERIAL PRIMARY KEY,
-		user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-		token VARCHAR(512) NOT NULL UNIQUE,
-		expires_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-		created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW()
-	);`*/
-
 	if _, err := db.Exec(createUsersTable); err != nil {
 		log.Fatalf("Ошибка создания таблицы users: %v", err)
 	}
@@ -69,9 +59,4 @@ func Migrate(db *sql.DB) {
 		log.Fatalf("Ошибка создания таблицы image_post: %v", err)
 	}
 	log.Println("Таблица image_post готова")
-
-	/*if _, err := db.Exec(createRefreshTokenTable); err != nil {
-		log.Fatalf("Ошибка создания таблицы refresh_tokens: %v", err)
-	}
-	log.Println("Таблица refresh_tokens готова")*/
 }
