@@ -1,0 +1,272 @@
+.webhookTable {
+    width: 50%;
+    margin-top: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.webhookTable th {
+    padding: 12px 8px;
+    background-color: #f9f9f9;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+}
+
+.webhookTable td {
+    padding: 12px 8px;
+    border: 1px solid var(--border-color);
+}
+
+.webhookTable td:last-child {
+    width: 50%;
+    max-width: 300px;
+}
+
+.url_input {
+    width: 80%;
+    height: 40px;
+    padding: 0 15px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+}
+
+.url_input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.webhook-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.webhook-url-input {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.webhook-url-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.webhook-url-input:disabled {
+    background: #f1f1f1;
+    color: #333;
+    cursor: default;
+}
+
+.webhook-action-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+    flex-shrink: 0;
+}
+
+.webhook-action-btn:hover {
+    transform: scale(1.05);
+}
+
+.webhook-action-btn.save {
+    background: #28a745;
+    color: #fff;
+}
+
+.webhook-action-btn.save:hover {
+    background: #218838;
+}
+
+.webhook-action-btn.edit {
+    background: #007bff;
+    color: #fff;
+}
+
+.webhook-action-btn.edit:hover {
+    background: #0069d9;
+}
+
+.webhook-action-btn.delete {
+    background: #dc3545;
+    color: #fff;
+}
+
+.webhook-action-btn.delete:hover {
+    background: #c82333;
+}
+
+.delete-row-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+    flex-shrink: 0;
+    background: #dc3545;
+    color: #fff;
+}
+
+.delete-row-btn:hover {
+    background: #c82333;
+}
+
+.webhook-action-btn-margin-left {
+    margin-left: 5px;
+}
+
+.webhook-action-btn-margin-right {
+    margin-right: 5px;
+}
+
+.custom-select {
+    position: relative;
+    width: 100%;
+    max-width: 300px;
+    display: inline-block;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+.select-display {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 12px;
+    background: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 40px;
+    font-size: 14px;
+    transition: border-color 0.3s ease;
+}
+
+.select-display:hover {
+    border-color: var(--primary-color);
+}
+
+.select-placeholder {
+    color: #999;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+    flex: 1 1 auto;
+}
+
+.select-placeholder.has-value {
+    color: #333;
+}
+
+.select-arrow {
+    color: #555;
+    font-size: 14px;
+    margin-left: 8px;
+    transition: transform 0.2s;
+}
+
+.custom-select.open .select-arrow {
+    transform: rotate(180deg);
+}
+
+.select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 10;
+    padding: 4px 0;
+    min-width: 180px;
+    display: none;
+}
+
+.custom-select.open .select-options {
+    display: block;
+}
+
+.option-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s;
+}
+
+.option-item:hover {
+    background: #f0f8ff;
+}
+
+.option-item input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.option-item-empty {
+    color: #999;
+}
+
+.webhook-multiselect-container {
+    position: relative;
+    width: 200px;
+    max-width: 220px;
+    display: inline-block;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+}
+
+.webhook-multiselect-container .custom-select {
+    width: 100%;
+    max-width: none;
+}
+
+.webhook-multiselect-container .select-placeholder {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.webhook-multiselect-container .select-options {
+    min-width: 200px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 20;
+}
+
+.webhook-multiselect-min-width {
+    min-width: 200px;
+}

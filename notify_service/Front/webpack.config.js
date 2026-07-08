@@ -2,32 +2,38 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-    // Точка входа — главный JS-файл вашего приложения
     entry: './static/index.js',
-    
-    // Настройка выходных файлов
+
     output: {
         filename: 'bundle.js',
         path: path.resolve(__dirname, 'dist'),
-        clean: true, // очищает dist/ при каждой сборке
+        clean: true,
     },
-    
-    // Правила обработки разных типов файлов
+
     module: {
         rules: [
             {
-                test: /\.css$/i,      // все файлы .css
-                use: ['style-loader', 'css-loader'], // обрабатываются этими загрузчиками
+                test: /\.css$/i,
+                use: ['style-loader', 'css-loader'],
             },
         ],
     },
-    
-    // Плагины
+
+    resolve: {
+        alias: {
+            '@utils': path.resolve(__dirname, 'static/utils'),
+            '@notifications': path.resolve(__dirname, 'static/notifications'),
+            '@auth': path.resolve(__dirname, 'static/auth'),
+            '@settings': path.resolve(__dirname, 'static/settings'),
+            '@webhooks': path.resolve(__dirname, 'static/webhooks'),
+        },
+    },
+
     plugins: [
         new HtmlWebpackPlugin({
-            template: './static/index.html', // берём ваш HTML как шаблон
+            template: './static/index.html',
         }),
     ],
-    
-    mode: 'development', // режим разработки (для продакшена — 'production')
+
+    mode: 'development',
 };
