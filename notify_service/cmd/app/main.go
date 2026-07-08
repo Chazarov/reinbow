@@ -8,11 +8,19 @@ import (
 	"strconv"
 	"sync"
 	"syscall"
+	"time"
 	"traineesheep/notifyservice/internal/handlers"
 	"traineesheep/notifyservice/internal/tgbot"
 	"traineesheep/notifyservice/pkg/email"
 
-	_ "traineesheep/notifyservice/docs" // сгенерированная документация
+	fiberSwagger "github.com/gofiber/swagger"
+	"github.com/tokyobordel/traineepkg/adapters/api/v1/auth"
+	authMiddlewarePkg "github.com/tokyobordel/traineepkg/adapters/api/v1/middleware/authjwt"
+	authSwagger "github.com/tokyobordel/traineepkg/adapters/api/v1/swagger"
+	authService "github.com/tokyobordel/traineepkg/auth/service"
+	jwtAuth "github.com/tokyobordel/traineepkg/authorization/jwt"
+
+	//_ "traineesheep/notifyservice/docs" // сгенерированная документация
 
 	"github.com/go-telegram/bot"
 	"github.com/gofiber/fiber/v3"
@@ -82,15 +90,28 @@ func main() {
 		AppName: "Notify Service v1.0",
 	})
 
+	SetupRouter(app)
+
+	var myAuthService authService.IAuthService // ваша реализация
+	jwtService := jwtAuth.NewService("secret", 15*time.Minute, 7*24*time.Hour)
+
+	authMiddleware := authMiddlewarePkg.NewMiddleware(jwtService)
+	handler := auth.NewHandler(myAuthService, jwtService, 15*time.Minute, 7*24*time.Hour)
+	auth.SetupRouter(app, handler)
+	authSwagger.SetupRouter(app)
 	api := app.Group("/api")
+
 	api.Post("/notify", d.HandleNotify)
-	api.Post("/notify_types", d.HandleSaveSettingsCheckmarks)
-	api.Get("/get_notify_settings", d.HandleGetNotifySettings)
+
 	api.Post("/moderator_login", d.HandleModeratorLogin)
 	app.Get("/swagger/*", adaptor.HTTPHandler(httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
 	)))
 
+	protected := api.Group("/", authMiddleware.RequireAccessToken())
+
+	protected.Post("/notify_types", d.HandleSaveSettingsCheckmarks)
+	protected.Get("/get_notify_settings", d.HandleGetNotifySettings)
 	serverErrors := make(chan error, 1)
 
 	go func() {
@@ -98,30 +119,10 @@ func main() {
 		serverErrors <- app.Listen(":8080")
 	}()
 
-	// r := mux.NewRouter()
-	// api := r.PathPrefix("/api").Subrouter()
-	// api.HandleFunc("/notify", d.HandleNotify).Methods("OPTIONS", "POST")
-	// api.HandleFunc("/notify_types", d.HandleSaveSettingsCheckmarks).Methods("OPTIONS", "POST")
-	// api.HandleFunc("/get_notify_settings", d.HandleGetNotifySettings).Methods("OPTIONS", "GET")
-	// api.HandleFunc("/moderator_login", d.HandleModeratorLogin).Methods("OPTIONS", "POST")
-
-	// srv := &http.Server{
-	// 	Addr:    "0.0.0.0:8080",
-	// 	Handler: r,
-	// }
-
 	go func() {
 		log.Println("Telegram bot has been started")
 		tgBot.Start(context.Background())
 	}()
-
-	// Запускаем mux server
-	// go func() {
-	// 	log.Println("Server has been started!")
-	// 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-	// 		panic(err)
-	// 	}
-	// }()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT)
@@ -144,4 +145,10 @@ func main() {
 			log.Println("Ошибка при отключении ТГ бота:", err)
 		}
 	}
+}
+
+func SetupRouter(app *fiber.App) {
+	app.Get("/auth/swagger/*", fiberSwagger.New(fiberSwagger.Config{
+		InstanceName: "swagger",
+	}))
 }

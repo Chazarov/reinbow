@@ -53,19 +53,19 @@ func (d DTO) HandleSaveSettingsCheckmarks(w http.ResponseWriter, r *http.Request
 	logMessage += "Был получен запрос на сохранение настроек админ-панели в БД\n"
 	logMessage += "=========================\n"
 
-	_, err := ValidateToken(r, d.JwtSecret)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		response.Success = false
-		response.Error_message = "Unauthorized"
-		respBytes, _ := json.MarshalIndent(response, "", "    ")
-		logMessage += "Пользователь был не авторизован. Действие не выполнено!\n"
-		if _, err := w.Write(respBytes); err != nil {
-			log.Println("Failed to write response:", err)
-			return
-		}
-		return
-	}
+	// _, err := ValidateToken(r, d.JwtSecret)
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	response.Success = false
+	// 	response.Error_message = "Unauthorized"
+	// 	respBytes, _ := json.MarshalIndent(response, "", "    ")
+	// 	logMessage += "Пользователь был не авторизован. Действие не выполнено!\n"
+	// 	if _, err := w.Write(respBytes); err != nil {
+	// 		log.Println("Failed to write response:", err)
+	// 		return
+	// 	}
+	// 	return
+	// }
 
 	body_byte, err := io.ReadAll(r.Body)
 	if err != nil {

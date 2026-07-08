@@ -48,22 +48,22 @@ func (d DTO) HandleGetNotifySettings(w http.ResponseWriter, r *http.Request) {
 	logMessage += "Был получен запрос на получение сохраненных настроек админ-панели\n"
 	logMessage += "=========================\n"
 
-	_, err := ValidateToken(r, d.JwtSecret)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		response.Success = false
-		response.Error_message = "Unauthorized"
-		respBytes, _ := json.MarshalIndent(response, "", "    ")
-		logMessage += "Пользователь был не авторизован. Действие не выполнено!\n"
-		if _, err := w.Write(respBytes); err != nil {
-			log.Println("Failed to write response:", err)
-			return
-		}
-		return
-	}
+	// _, err := ValidateToken(r, d.JwtSecret)
+	// if err != nil {
+	// 	w.WriteHeader(http.StatusUnauthorized)
+	// 	response.Success = false
+	// 	response.Error_message = "Unauthorized"
+	// 	respBytes, _ := json.MarshalIndent(response, "", "    ")
+	// 	logMessage += "Пользователь был не авторизован. Действие не выполнено!\n"
+	// 	if _, err := w.Write(respBytes); err != nil {
+	// 		log.Println("Failed to write response:", err)
+	// 		return
+	// 	}
+	// 	return
+	// }
 
 	var json_list = make([]types.NotifyTypeMessenger, 0)
-	err, json_list = database_conn_dto.GetSettings(json_list)
+	err, json_list := database_conn_dto.GetSettings(json_list)
 	if err != nil {
 		logMessage += fmt.Sprintf("При получении настроек админ-панели из базы произошла ошибка %v", err)
 		return

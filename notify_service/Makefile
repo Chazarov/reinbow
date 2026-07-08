@@ -1,4 +1,4 @@
-include ./Backend/config/data.env
+include ./config/data.env
 export DATABASE_CONNECT
 
 run:
