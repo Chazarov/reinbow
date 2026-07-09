@@ -7,7 +7,7 @@ require (
 	github.com/gofiber/contrib/v3/swaggo v1.0.8
 	github.com/gofiber/fiber/v3 v3.4.0
 	github.com/swaggo/swag v1.16.6
-	github.com/tokyobordel/traineepkg v0.1.4
+	github.com/tokyobordel/traineepkg v0.1.6
 )
 
 require (

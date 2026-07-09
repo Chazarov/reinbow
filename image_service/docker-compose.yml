@@ -16,9 +16,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - trainee_image_service_net
-
   redis:
     image: redis:7-alpine
     container_name: imageservice_redis
@@ -29,8 +26,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - trainee_image_service_net
 
   migrate:
     image: postgres:15-alpine
@@ -45,8 +40,6 @@ services:
     entrypoint: >
       sh -c "psql -h postgres -U postgres -d imageservice -v ON_ERROR_STOP=1 -f /migrations/initial_001.sql"
     restart: "no"
-    networks:
-      - trainee_image_service_net
 
   app:
     build: ./
@@ -84,9 +77,13 @@ services:
     volumes:
       - image_data:/data/images
       - ./logs:/root/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
     restart: unless-stopped
-    networks:
-      - trainee_image_service_net
 
   frontend:
     build: ./web
@@ -95,20 +92,10 @@ services:
       - "3000:80"
     depends_on:
       app:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
-    networks:
-      - trainee_image_service_net
 
 volumes:
   postgres_data:
   image_data:
   logs_data:
-
-networks:
-  trainee_image_service_net:
-    driver: bridge
-    name: trainee_image_service_net
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16 

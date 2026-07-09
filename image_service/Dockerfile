@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM golang:1.26.4-bookworm AS builder
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -8,20 +10,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY go.mod go.sum* ./
-RUN go mod download
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 COPY . .
 
-# ENV CGO_ENABLED=1
-RUN go mod tidy
-RUN go run github.com/swaggo/swag/cmd/swag@v1.16.4 init -g spec.go -o api -d api,internal/app/ports/api/v1 --parseInternal --instanceName internal
-RUN go build -o /imageservice ./cmd/image_service/
+ENV CGO_ENABLED=1
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go build -o /imageservice ./cmd/image_service/
 
 FROM debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+    curl \
     imagemagick \
     fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
