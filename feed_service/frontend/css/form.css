@@ -55,7 +55,7 @@
     padding: 0.25rem 0;
 }
 
-.imageTools {
+.image-tools {
     position: absolute;
     top: 50%;
     width: 100%;
@@ -67,7 +67,7 @@
     pointer-events: none;
 }
 
-.imageBtn {
+.image-btn {
     background: var(--accent-opacity);
     display: inline-flex;
     justify-content: center;
@@ -83,7 +83,7 @@
     box-sizing: border-box;
 }
 
-.imageBtn:hover {
+.image-btn:hover {
     background: var(--primary-opacity);
     cursor: pointer;
 }
@@ -95,7 +95,7 @@
     background: #f0f0f0;
 }
 
-.imageTools {
+.image-tools {
     position: absolute;
     top: 50%;
     width: 100%;

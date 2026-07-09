@@ -72,7 +72,7 @@ export function initFeed() {
     feedContainer = document.getElementById('feedContainer');
     feedLoader = document.getElementById('feedLoader');
     allPostsBtn = document.getElementById('allPostsBtn');
-    userNameDisplay = document.getElementById('userNameDisplay');
+    userNameDisplay = document.getElementById('user-name-display');
     confirmModal = document.getElementById('confirmModal');
     const logo = document.querySelector('.logo');
 

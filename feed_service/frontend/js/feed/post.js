@@ -16,7 +16,7 @@ import FeedAPI from "../client/feed_service.js";
 function prevImage(postId) {
     const imagesBlock = document.getElementById("images_" + postId);
     if (!imagesBlock) return;
-    const currentImage = imagesBlock.querySelector(".showedImage");
+    const currentImage = imagesBlock.querySelector(".showed-image");
     if (!currentImage) return;
     const prevImageLink = currentImage.parentElement.previousElementSibling;
     if (prevImageLink && prevImageLink.children.length !== 0) {
@@ -42,7 +42,7 @@ function prevImage(postId) {
 function nextImage(postId) {
     const imagesBlock = document.getElementById("images_" + postId);
     if (!imagesBlock) return;
-    const currentImage = imagesBlock.querySelector(".showedImage");
+    const currentImage = imagesBlock.querySelector(".showed-image");
     if (!currentImage) return;
     const nextImageLink = currentImage.parentElement.nextElementSibling;
     if (nextImageLink && nextImageLink.children.length !== 0) {
@@ -79,17 +79,17 @@ export function createPost(post) {
 
     for (const imageId of post.images || []) {
         sliderImages += `<a href="${process.env.IS_URL}/api/guest/image/${imageId}" target="_blank">
-            <img id="image_${imageId}" src="${process.env.IS_URL}/api/guest/image/${imageId}?type=icon" class="postImage">
+            <img id="image_${imageId}" src="${process.env.IS_URL}/api/guest/image/${imageId}?type=icon" class="post-image">
         </a>`;
     }
     sliderImages += "</div>";
 
     const tools = `
-        <div class="imageTools">
-            <span class="imageBtn imagePrev" data-post-id="${post.id}" data-action="prev">
+        <div class="image-tools">
+            <span class="image-btn imagePrev" data-post-id="${post.id}" data-action="prev">
                 <span class="fa fa-arrow-left"></span>
             </span>
-            <span class="imageBtn imageNext" data-post-id="${post.id}" data-action="next">
+            <span class="image-btn imageNext" data-post-id="${post.id}" data-action="next">
                 <span class="fa fa-arrow-right"></span>
             </span>
         </div>`;
@@ -127,7 +127,7 @@ export function createPost(post) {
  */
 export function createPostsHandlers() {
     // Показать первые изображения
-    document.querySelectorAll('.img-slider a:first-child .postImage').forEach(el => {
+    document.querySelectorAll('.img-slider a:first-child .post-image').forEach(el => {
         el.classList.add("showedImage");
     });
 

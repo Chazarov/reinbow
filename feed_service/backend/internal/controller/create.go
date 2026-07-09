@@ -12,6 +12,7 @@ import (
 	"traineesheep/feedservice/internal/utils"
 
 	"github.com/gofiber/fiber/v3"
+	authPackage "github.com/tokyobordel/traineepkg/adapters/api/v1/auth"
 	authMiddleware "github.com/tokyobordel/traineepkg/adapters/api/v1/middleware/authjwt"
 	authService "github.com/tokyobordel/traineepkg/auth/service"
 	"github.com/tokyobordel/traineepkg/authorization/jwt"
@@ -76,37 +77,34 @@ func Create(app *fiber.App,
 
 	requireAccessToken := authMiddleware.NewMiddleware(ts).RequireAccessToken()
 
-	// Публичная лента
-	app.Get("/feed", ctrl.Feed)
-
-	// Аутентификация
-	app.Post("/auth/login", ctrl.Signin)  // получение токенов
-	app.Post("/auth/logout", ctrl.Logout) // сброс refresh-токена
-
-	// Пользователи
-	app.Post("/users", ctrl.Signup) // создание пользователя (регистрация)
-
-	// Подтверждение email (переход по ссылке из письма)
-	// Middleware ConfirmRequired проверяет валидность токена из query-параметра
-	app.Get("/users/confirm", middleware.ConfirmRequired(ts.GetSecret()), ctrl.Confirm)
-
-	// Повторная отправка подтверждения (требуется аутентификация)
-	//app.Post("/users/me/confirmation", middleware.TokenAuth, ctrl.SendConfirm)
-	app.Post("/users/me/confirmation", requireAccessToken, ctrl.SendConfirm)
-
-	// Профиль текущего пользователя (требуется аутентификация)
-	app.Get("/users/me", requireAccessToken, ctrl.GetUser)
-
-	// Посты
-	// Создание нового поста (загрузка изображения и текста)
-	app.Post("/posts", requireAccessToken, ctrl.Upload)
-
-	// Healthcheck
+	// ---------- Публичные маршруты ----------
 	app.Get("/health", func(c fiber.Ctx) error {
-		return c.JSON(utils.ApiResponse{
-			Success:    true,
-			Data:       nil,
-			ErrMessage: "",
-		})
+		return c.JSON(utils.ApiResponse{Success: true})
 	})
+	app.Get("/feed", ctrl.Feed) // общая лента
+
+	// ---------- Группа /auth ----------
+	loginHandler := authPackage.NewHandler(as, ts, ts.GetAccessTTL(), ts.GetRefreshTTL()).Login
+	logoutHandler := authPackage.NewHandler(as, ts, ts.GetAccessTTL(), ts.GetRefreshTTL()).Logout
+	auth := app.Group("/auth")
+	auth.Post("/login", loginHandler)
+	auth.Post("/logout", logoutHandler)
+
+	// ---------- Группа /users ----------
+	users := app.Group("/users")
+	// Регистрация (публичный доступ)
+	registerHanlder := authPackage.NewHandler(as, ts, ts.GetAccessTTL(), ts.GetRefreshTTL()).Register
+	users.Post("/", registerHanlder)
+
+	// Подтверждение email (свой middleware для проверки query-токена)
+	users.Get("/confirm", middleware.ConfirmRequired(ts.GetSecret()), ctrl.Confirm)
+
+	// Защищённая подгруппа /users/me (все маршруты требуют access-токен)
+	me := users.Group("/me", requireAccessToken)
+	me.Get("/", ctrl.GetUser)                  // GET /users/me
+	me.Post("/confirmation", ctrl.SendConfirm) // POST /users/me/confirmation
+
+	// ---------- Группа /posts (все требуют access-токен) ----------
+	posts := app.Group("/posts", requireAccessToken)
+	posts.Post("/", ctrl.Upload)
 }

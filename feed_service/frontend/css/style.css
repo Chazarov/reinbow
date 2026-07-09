@@ -141,7 +141,7 @@ h2 {
     .modal-content {
         padding: 1.5rem;
     }
-    #userNameDisplay {
+    #user-name-display {
         max-width: 50px;
     }
 }
@@ -152,7 +152,7 @@ h2 {
     margin-right: 1rem;
 }
 
-#userNameDisplay {
+#user-name-display {
     cursor: pointer;
     max-width: 150px;
     white-space: nowrap;

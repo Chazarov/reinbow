@@ -15,11 +15,15 @@ import (
 	"traineesheep/feedservice/internal/utils"
 )
 
+// ImageClient — клиент для взаимодействия с удалённым сервисом изображений.
+// Содержит базовый URL сервиса и HTTP-клиент с таймаутом.
 type ImageClient struct {
-	BaseURL string
-	Client  *http.Client
+	BaseURL string       // корневой URL сервиса (например, "http://images:8080")
+	Client  *http.Client // HTTP-клиент для выполнения запросов
 }
 
+// NewImageClient создаёт новый экземпляр ImageClient с заданным базовым URL.
+// Внутренний HTTP-клиент настраивается с таймаутом 10 секунд.
 func NewImageClient(baseURL string) *ImageClient {
 	return &ImageClient{
 		BaseURL: baseURL,
@@ -40,14 +44,16 @@ func mimeTypeByExtension(filename string) string {
 	if mt == "" {
 		return "application/octet-stream"
 	}
-	// возвращаем основную часть, например "image/jpeg"
+	// Убираем возможные параметры (например, "; charset=utf-8"),
+	// оставляем только основную часть "image/jpeg"
 	if i := strings.Index(mt, ";"); i != -1 {
 		return mt[:i]
 	}
 	return mt
 }
 
-// mediaTypeToShort преобразует полный MIME-тип в короткий формат (например, "image/jpeg" → "jpeg").
+// mediaTypeToShort преобразует полный MIME-тип в короткий формат
+// (например, "image/jpeg" → "jpeg", "image/svg+xml" → "svg").
 // Если тип не содержит '/', возвращает исходную строку.
 func mediaTypeToShort(mediaType string) string {
 	parts := strings.SplitN(mediaType, "/", 2)
@@ -55,42 +61,50 @@ func mediaTypeToShort(mediaType string) string {
 		return mediaType
 	}
 	subtype := parts[1]
-	// убираем возможный суффикс, например "svg+xml" -> "svg"
+	// Удаляем возможный суффикс "+xml" и т.п.
 	if idx := strings.Index(subtype, "+"); idx != -1 {
 		subtype = subtype[:idx]
 	}
 	return subtype
 }
 
+// SaveFiles отправляет несколько файлов (multipart.FileHeader) в сервис изображений
+// и возвращает список идентификаторов созданных изображений.
+// На каждый файл делается отдельный POST-запрос на <BaseURL>/upload.
 func (isc *ImageClient) SaveFiles(files []*multipart.FileHeader) ([]int, error) {
-	var imageIDs []int // сюда соберём полученные id
+	var imageIDs []int // сюда будем собирать полученные id
+
 	for _, fileHeader := range files {
+		// Открываем содержимое загруженного файла
 		file, err := fileHeader.Open()
 		if err != nil {
 			return nil, fmt.Errorf("Не удалось прочитать файл")
 		}
 
+		// Читаем всё содержимое в память (для больших файлов может быть проблемой)
 		fileBytes, err := io.ReadAll(file)
 		file.Close() // закрываем сразу, как прочитали
 		if err != nil {
 			return nil, fmt.Errorf("Ошибка чтения файла")
 		}
 
-		// Определяем media_type: сначала пробуем из заголовка, затем по расширению
+		// Определяем media_type: сначала пробуем из заголовка Content-Type multipart-части,
+		// затем по расширению имени файла
 		mediaType := fileHeader.Header.Get("Content-Type")
 		if mediaType == "" {
 			mediaType = mimeTypeByExtension(fileHeader.Filename)
 		}
 
+		// Приводим тип к короткому формату (например, "jpeg", "png")
 		shortMediaType := mediaTypeToShort(mediaType)
 		if shortMediaType == "" {
 			shortMediaType = "octet-stream"
 		}
 
-		// Кодируем содержимое в base64
+		// Кодируем содержимое в base64 для передачи в JSON
 		encodedData := base64.StdEncoding.EncodeToString(fileBytes)
 
-		// Формируем тело JSON
+		// Формируем тело запроса
 		requestBody := map[string]string{
 			"name":       strings.TrimSuffix(fileHeader.Filename, filepath.Ext(fileHeader.Filename)),
 			"media_type": shortMediaType,
@@ -101,52 +115,50 @@ func (isc *ImageClient) SaveFiles(files []*multipart.FileHeader) ([]int, error) 
 			return nil, fmt.Errorf("Ошибка подготовки данных")
 		}
 
-		// Отправляем POST-запрос с Content-Type: application/json
+		// Создаём POST-запрос с JSON-телом
 		httpReq, err := http.NewRequest("POST", isc.BaseURL+"/upload", bytes.NewReader(jsonBody))
 		if err != nil {
 			return nil, fmt.Errorf("Внутренняя ошибка")
 		}
 		httpReq.Header.Set("Content-Type", "application/json")
 
+		// Выполняем запрос
 		resp, err := isc.Client.Do(httpReq)
 		if err != nil {
 			return nil, fmt.Errorf("Не удалось сохранить изображение в ImageService")
 		}
 		defer resp.Body.Close()
 
+		// Проверяем успешность ответа (200 или 201)
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			return nil, fmt.Errorf(fmt.Sprintf("Ошибка внешнего сервиса: статус %d, тело %s",
-				resp.StatusCode, string(bodyBytes)))
+			return nil, fmt.Errorf("Ошибка внешнего сервиса: статус %d, тело %s",
+				resp.StatusCode, string(bodyBytes))
 		}
 
+		// Разбираем JSON-ответ
 		var extResp utils.ApiResponse
 		if err := json.NewDecoder(resp.Body).Decode(&extResp); err != nil {
 			return nil, fmt.Errorf("Неверный ответ от ImageService")
 		}
 
-		// 1. Приводим Data к map[string]interface{}
+		// Извлекаем ID изображения из поля Data ответа
 		dataMap, ok := extResp.Data.(map[string]interface{})
 		if !ok {
 			return nil, fmt.Errorf("Неверный формат данных от ImageService")
 		}
 
-		// 2. Извлекаем id
 		idRaw, exists := dataMap["id"]
 		if !exists {
 			return nil, fmt.Errorf("Поле id отсутствует в ответе ImageService")
 		}
 
-		// 3. Пробуем привести к float64 (стандартный числовой тип из JSON)
-		idFloat, ok := idRaw.(float64)
+		idFloat, ok := idRaw.(float64) // JSON-числа парсятся как float64
 		if !ok {
-			// Иногда id может быть строкой или другим типом — обработаем и это
 			return nil, fmt.Errorf("Неверный тип id в ответе ImageService")
 		}
 
-		// 4. Преобразуем в int
 		imageID := int(idFloat)
-
 		imageIDs = append(imageIDs, imageID)
 	}
 

@@ -1,8 +1,6 @@
 package service
 
 import (
-	"traineesheep/feedservice/internal/middleware"
-
 	authService "github.com/tokyobordel/traineepkg/auth/service"
 	model "github.com/tokyobordel/traineepkg/models"
 	"golang.org/x/crypto/bcrypt"
@@ -56,7 +54,7 @@ func (us *AuthService) Register(pass string, login string, data map[string]strin
 		return model.User{}, err
 	}
 
-	token, err := middleware.GenerateConfirmToken(user.ID)
+	token, err := utils.GenerateConfirmToken(user.ID)
 	if err != nil {
 		return model.User{}, err
 	}

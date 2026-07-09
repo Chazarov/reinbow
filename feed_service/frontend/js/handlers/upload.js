@@ -36,7 +36,7 @@ import FeedAPI from '../client/feed_service.js';
 import { ApiError } from '../client/feed_service.js';
 
 export function initUploadHandlers() {
-    const uploadBtn = document.getElementById('btnUpload');
+    const uploadBtn = document.getElementById('btn-upload');
     const uploadModal = document.getElementById('uploadModal');
     const uploadForm = document.getElementById('uploadForm');
     const fileInput = document.getElementById('fileInput');
