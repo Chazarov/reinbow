@@ -61,21 +61,22 @@ type Controller struct {
 //	Служебное:
 //	  GET /health – проверка работоспособности сервиса
 func Create(app *fiber.App,
-	us *service.UserService,
-	fs *service.FeedService,
-	as authService.IAuthService, ts *jwt.Service) {
+	userService *service.UserService,
+	feedService *service.FeedService,
+	authService authService.IAuthService,
+	tokenService *jwt.Service) {
 
 	// Инициализация контроллера с внедрением зависимостей
 	ctrl := &Controller{
-		AuthService:  as,
-		UserService:  us,
-		FeedService:  fs,
-		TokenService: ts,
+		AuthService:  authService,
+		UserService:  userService,
+		FeedService:  feedService,
+		TokenService: tokenService,
 	}
 
 	app.Use(middleware.RequestIDMiddleware())
 
-	requireAccessToken := authMiddleware.NewMiddleware(ts).RequireAccessToken()
+	requireAccessToken := authMiddleware.NewMiddleware(tokenService).RequireAccessToken()
 
 	// ---------- Публичные маршруты ----------
 	app.Get("/health", func(c fiber.Ctx) error {
@@ -84,8 +85,10 @@ func Create(app *fiber.App,
 	app.Get("/feed", ctrl.Feed) // общая лента
 
 	// ---------- Группа /auth ----------
-	loginHandler := authPackage.NewHandler(as, ts, ts.GetAccessTTL(), ts.GetRefreshTTL()).Login
-	logoutHandler := authPackage.NewHandler(as, ts, ts.GetAccessTTL(), ts.GetRefreshTTL()).Logout
+	loginHandler := authPackage.NewHandler(authService, tokenService,
+		tokenService.GetAccessTTL(), tokenService.GetRefreshTTL()).Login
+	logoutHandler := authPackage.NewHandler(authService, tokenService,
+		tokenService.GetAccessTTL(), tokenService.GetRefreshTTL()).Logout
 	auth := app.Group("/auth")
 	auth.Post("/login", loginHandler)
 	auth.Post("/logout", logoutHandler)
@@ -93,15 +96,19 @@ func Create(app *fiber.App,
 	// ---------- Группа /users ----------
 	users := app.Group("/users")
 	// Регистрация (публичный доступ)
-	registerHanlder := authPackage.NewHandler(as, ts, ts.GetAccessTTL(), ts.GetRefreshTTL()).Register
+	registerHanlder := authPackage.NewHandler(authService, tokenService,
+		tokenService.GetAccessTTL(), tokenService.GetRefreshTTL()).Register
 	users.Post("/", registerHanlder)
 
 	// Подтверждение email (свой middleware для проверки query-токена)
-	users.Get("/confirm", middleware.ConfirmRequired(ts.GetSecret()), ctrl.Confirm)
+	users.Get("/confirm", middleware.ConfirmRequired(tokenService.GetSecret()), ctrl.Confirm)
 
 	// Защищённая подгруппа /users/me (все маршруты требуют access-токен)
+
 	me := users.Group("/me", requireAccessToken)
-	me.Get("/", ctrl.GetUser)                  // GET /users/me
+	getMeHandler := authPackage.NewHandler(authService, tokenService,
+		tokenService.GetAccessTTL(), tokenService.GetRefreshTTL()).GetMe
+	me.Get("/", getMeHandler)                  // GET /users/me
 	me.Post("/confirmation", ctrl.SendConfirm) // POST /users/me/confirmation
 
 	// ---------- Группа /posts (все требуют access-токен) ----------

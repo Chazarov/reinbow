@@ -5,7 +5,7 @@ import FeedAPI from "../client/feed_service.js";
 /**
  * Переключает видимость изображений в слайдере поста на предыдущее.
  *
- * Находит текущее видимое изображение (с классом `showedImage`) внутри блока
+ * Находит текущее видимое изображение (с классом `showed-image`) внутри блока
  * с id `images_${postId}` и, если существует предыдущий соседний элемент,
  * скрывает текущее и показывает предыдущее.
  *
@@ -22,8 +22,8 @@ function prevImage(postId) {
     if (prevImageLink && prevImageLink.children.length !== 0) {
         const prevImg = prevImageLink.children[0];
         if (prevImg) {
-            currentImage.classList.remove('showedImage');
-            prevImg.classList.add('showedImage');
+            currentImage.classList.remove('showed-image');
+            prevImg.classList.add('showedimage');
         }
     }
 }
@@ -31,7 +31,7 @@ function prevImage(postId) {
 /**
  * Переключает видимость изображений в слайдере поста на следующее.
  *
- * Находит текущее видимое изображение (с классом `showedImage`) внутри блока
+ * Находит текущее видимое изображение (с классом `showed-image`) внутри блока
  * с id `images_${postId}` и, если существует следующий соседний элемент,
  * скрывает текущее и показывает следующий.
  *
@@ -48,8 +48,8 @@ function nextImage(postId) {
     if (nextImageLink && nextImageLink.children.length !== 0) {
         const nextImg = nextImageLink.children[0];
         if (nextImg) {
-            currentImage.classList.remove('showedImage');
-            nextImg.classList.add('showedImage');
+            currentImage.classList.remove('showed-mage');
+            nextImg.classList.add('showed-image');
         }
     }
 }
@@ -117,7 +117,7 @@ export function createPost(post) {
 /**
  * Навешивает обработчики событий на элементы внутри постов после рендеринга.
  *
- * - Первому изображению в каждом слайдере добавляет класс `showedImage`.
+ * - Первому изображению в каждом слайдере добавляет класс `showed-image`.
  * - Для кнопок `.imagePrev` и `.imageNext` делегирует вызовы `prevImage` и `nextImage`.
  * - Для элементов `.post-author` добавляет клик-обработчик, загружающий ленту автора,
  *   если текущий пользователь подтверждён.
@@ -128,7 +128,7 @@ export function createPost(post) {
 export function createPostsHandlers() {
     // Показать первые изображения
     document.querySelectorAll('.img-slider a:first-child .post-image').forEach(el => {
-        el.classList.add("showedImage");
+        el.classList.add("showed-image");
     });
 
     // Ловим все ошибки загрузки картинок на странице на фазе перехвата

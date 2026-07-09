@@ -99,6 +99,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const user = await FeedAPI.getUserData();
         if (!user) {
             showGuestUI();
+            const hash = window.location.hash;
+            const value = hash.slice(1);
+            if(value === "login") {
+                openModal(signinModal)
+            }
             return;
         }
         showLoggedInUI(user);
@@ -113,12 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initFeed();
     initUploadHandlers();
     initRepeatConfirmHandlers();
-
-    const hash = window.location.hash;
-    const value = hash.slice(1);
-    if(value === "login") {
-        openModal(signinModal)
-    }
 });
 
 /**
@@ -181,13 +180,11 @@ export function showLoggedInUI(user) {
     const userBlock = document.getElementById('userBlock');
     const userNameDisplay = document.getElementById('user-name-display');
     const uploadBtn = document.getElementById('btn-upload');
-    const confirmBtn = document.getElementById('repeat-confirm');
 
     if (guestButtons) guestButtons.style.display = 'none';
     if (userBlock) userBlock.style.display = 'block';
     if (userNameDisplay) userNameDisplay.textContent = user.login;
     if (uploadBtn) uploadBtn.style.display = 'inline-flex';
-    if (confirmBtn) uploadBtn.style.display = 'block';
 }
 
 /**
@@ -203,13 +200,11 @@ export function showGuestUI() {
     const userBlock = document.getElementById('userBlock');
     const userNameDisplay = document.getElementById('user-name-display');
     const uploadBtn = document.getElementById('btn-upload');
-    const confirmBtn = document.getElementById('repeat-confirm');
 
     if (guestButtons) guestButtons.style.display = 'block';
     if (userBlock) userBlock.style.display = 'none';
     if (userNameDisplay) userNameDisplay.textContent = '';
     if (uploadBtn) uploadBtn.style.display = 'none';
-    if (confirmBtn) confirmBtn.style.display = 'none';
 }
 
 /**
