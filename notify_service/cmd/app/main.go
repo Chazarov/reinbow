@@ -107,8 +107,6 @@ func main() {
 
 	api.Post("/notify", d.HandleNotify)
 
-	api.Post("/moderator_login", d.HandleModeratorLogin)
-
 	// app.Get("/swagger/*", adaptor.HTTPHandler(httpSwagger.Handler(
 	// 	httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
 	// )))

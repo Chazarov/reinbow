@@ -43,6 +43,7 @@ import (
 // @Security ApiKeyAuth
 func (d DTO) HandleSaveSettingsCheckmarks(w http.ResponseWriter, r *http.Request) {
 	var response types.ResponseData
+	logMessage = ""
 	database_conn_dto := database.NewDatabaseDTO(d.sql_connection)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
@@ -76,7 +77,6 @@ func (d DTO) HandleSaveSettingsCheckmarks(w http.ResponseWriter, r *http.Request
 		response.Success = false
 		response.Error_message = errs.ErrReadingRequestMessage + err.Error()
 		respBytes, _ := json.MarshalIndent(response, "", "    ")
-		logMessage += response.Error_message + "\n"
 		w.WriteHeader(http.StatusInternalServerError)
 		if _, err := w.Write(respBytes); err != nil {
 			log.Error().Msg(errs.ErrWritingToRespBody)
@@ -90,7 +90,6 @@ func (d DTO) HandleSaveSettingsCheckmarks(w http.ResponseWriter, r *http.Request
 		response.Success = false
 		response.Error_message = errs.ErrJsonUnmarshal + err.Error()
 		respBytes, _ := json.MarshalIndent(response, "", "    ")
-		logMessage += response.Error_message + "\n"
 		w.WriteHeader(http.StatusBadRequest)
 		log.Error().Msg(err.Error())
 		if _, err := w.Write(respBytes); err != nil {

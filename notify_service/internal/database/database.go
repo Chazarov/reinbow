@@ -4,6 +4,7 @@ import (
 	"context"
 	"traineesheep/notifyservice/internal/types"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -99,4 +100,14 @@ func (d DatabaseDTO) DeleteSettings() error {
 		return err
 	}
 	return nil
+}
+
+func (d DatabaseDTO) GetNotifyTypes() (pgx.Rows, error) {
+	conn := d.sql_connection
+	query := `SELECT notify_type FROM notify_type_message`
+	rows, err := conn.Query(context.Background(), query)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
 }

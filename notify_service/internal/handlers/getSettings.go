@@ -39,6 +39,7 @@ import (
 // @Security ApiKeyAuth
 func (d DTO) HandleGetNotifySettings(w http.ResponseWriter, r *http.Request) {
 	var response types.ResponseData
+	logMessage = ""
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	database_conn_dto := database.NewDatabaseDTO(d.sql_connection)
 

@@ -44,52 +44,6 @@
                 }
             }
         },
-        "/api/moderator_login": {
-            "post": {
-                "description": "Проверяет логин и пароль, возвращает JWT",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "auth"
-                ],
-                "summary": "Авторизация админа",
-                "parameters": [
-                    {
-                        "description": "Логин и пароль",
-                        "name": "request",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/types.LoginData"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/types.ResponseData"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/types.ResponseData"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/types.ResponseData"
-                        }
-                    }
-                }
-            }
-        },
         "/api/notify": {
             "post": {
                 "security": [
@@ -206,19 +160,6 @@
         }
     },
     "definitions": {
-        "types.LoginData": {
-            "type": "object",
-            "properties": {
-                "login": {
-                    "description": "Логин пользователя",
-                    "type": "string"
-                },
-                "password": {
-                    "description": "Пароль пользователя",
-                    "type": "string"
-                }
-            }
-        },
         "types.NotifyTypeMessenger": {
             "type": "object",
             "properties": {

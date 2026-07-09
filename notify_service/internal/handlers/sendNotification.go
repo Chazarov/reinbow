@@ -49,6 +49,7 @@ var logMessage string
 // @Router /api/notify [post]
 // @Security ApiKeyAuth
 func (d DTO) HandleNotify(w http.ResponseWriter, r *http.Request) {
+	logMessage = ""
 	var response types.ResponseData
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	var req types.Recipent
@@ -61,10 +62,6 @@ func (d DTO) HandleNotify(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-
-	logMessage += fmt.Sprintf("Был получен запрос на тип %v\n", req.Notify_Type)
-	logMessage += fmt.Sprintf("Сообщение для отправки: \"%v\"", req.Message)
-	logMessage += "=========================\n"
 
 	// Ограничиваем количество одновременно запущенных горутин
 	// Чтобы обрабатывать одновременно за раз не больше WORKER_COUNT
@@ -81,7 +78,7 @@ func (d DTO) HandleNotify(w http.ResponseWriter, r *http.Request) {
 		response.Error_message = errs.ErrReadingRequestMessage + err.Error()
 		response_byte, _ := json.MarshalIndent(response, "", "    ")
 		w.WriteHeader(http.StatusInternalServerError)
-		logMessage += response.Error_message + "\n"
+		log.Error().Msg(response.Error_message)
 		if _, err := w.Write(response_byte); err != nil {
 			log.Error().Msg(errs.ErrWritingToRespBody)
 		}
@@ -92,7 +89,7 @@ func (d DTO) HandleNotify(w http.ResponseWriter, r *http.Request) {
 		response.Success = false
 		response.Error_message = errs.ErrJsonUnmarshal + err.Error()
 		response_byte, _ := json.MarshalIndent(response, "", "    ")
-		logMessage += response.Error_message + "\n"
+		log.Error().Msg(response.Error_message)
 		w.WriteHeader(http.StatusBadRequest)
 		if _, err := w.Write(response_byte); err != nil {
 			log.Error().Msg(errs.ErrWritingToRespBody)
@@ -100,10 +97,28 @@ func (d DTO) HandleNotify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logMessage += fmt.Sprintf("Был получен запрос на тип %v\n", req.Notify_Type)
+	logMessage += fmt.Sprintf("Сообщение для отправки: \"%v\"\n", req.Message)
+	logMessage += "=========================\n"
+
 	var tg_user_id int64 = 924956695 // ВРЕМЕННО ЗАХАРДКОЖЕН ID ДО РЕАЛИЗАЦИИ ПОЛУЧЕНИЯ ИЗ ЧАТА
 	var user_email string = req.Email
 
 	var isAllowed bool = false
+
+	rows, err := database_conn_dto.GetNotifyTypes()
+	if err != nil {
+		log.Error().Msg(err.Error())
+		return
+	}
+
+	if len(notify_types_allowed) == 0 {
+		for rows.Next() {
+			var temp string
+			rows.Scan(&temp)
+			notify_types_allowed = append(notify_types_allowed, temp)
+		}
+	}
 
 	for _, elem := range notify_types_allowed {
 		if elem == req.Notify_Type {
@@ -114,14 +129,15 @@ func (d DTO) HandleNotify(w http.ResponseWriter, r *http.Request) {
 
 	if !isAllowed {
 		response.Success = false
-		response.Error_message = "Недопустимый тип уведомления!"
+		response.Error_message = fmt.Sprintf("Недопустимый тип уведомления! %v", req.Notify_Type)
 		response_byte, _ := json.MarshalIndent(response, "", "    ")
-		logMessage += response.Error_message + "\n"
+		log.Error().Msg(response.Error_message)
 		w.WriteHeader(http.StatusBadRequest)
 		if _, err := w.Write(response_byte); err != nil {
 			log.Error().Msg(errs.ErrWritingToRespBody)
 			return
 		}
+		return
 	}
 
 	// Если пользователь зарегался, то добавляю в свою базу его почту и user_id и выхожу
@@ -130,7 +146,7 @@ func (d DTO) HandleNotify(w http.ResponseWriter, r *http.Request) {
 			response.Success = false
 			response.Error_message = "При попытке добавить данные в базу произошла ошибка: " + err.Error()
 			response_byte, _ := json.MarshalIndent(response, "", "    ")
-			logMessage += response.Error_message + "\n"
+			log.Error().Msg(response.Error_message)
 			w.WriteHeader(http.StatusBadRequest)
 			if _, err := w.Write(response_byte); err != nil {
 				log.Error().Msg(errs.ErrWritingToRespBody)
