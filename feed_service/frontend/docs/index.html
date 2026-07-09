@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>ИН100ГРАММ — фронтенд ленты с постами</h1>
+<p>Single Page Application для публикации изображений с возможностью регистрации/входа, просмотра общей и персональной лент, загрузки новых постов.</p>
+<h2>Структура HTML (<code>index.html</code>)</h2>
+<ul>
+<li>
+<p><strong><code>&lt;header class=&quot;header&quot;&gt;</code></strong> — шапка сайта</p>
+<ul>
+<li><code>.logo</code> — логотип, клик возвращает на общую ленту</li>
+<li><code>#guestButtons</code> — кнопки «Войти» и «Регистрация» (показываются гостям)</li>
+<li><code>#userBlock</code> — блок авторизованного пользователя: имя (<code>#userNameDisplay</code>), кнопка «Все посты» (<code>#allPostsBtn</code>), кнопка выхода (<code>#btnLogout</code>)</li>
+</ul>
+</li>
+<li>
+<p><strong><code>&lt;main class=&quot;main&quot;&gt;</code></strong> — основная область</p>
+<ul>
+<li><code>#feedContainer</code> — контейнер для карточек постов</li>
+<li><code>#feedLoader</code> — индикатор загрузки</li>
+</ul>
+</li>
+<li>
+<p><strong>Модальные окна</strong></p>
+<ul>
+<li><code>#signinModal</code> — форма входа (<code>#signinForm</code>)</li>
+<li><code>#signupModal</code> — форма регистрации (<code>#signupForm</code>)</li>
+<li><code>#uploadModal</code> — форма загрузки поста (<code>#uploadForm</code>)<br>
+Все модалки закрываются через <code>.close</code>, клик вне окна или вызов <code>closeModal()</code>.</li>
+</ul>
+</li>
+<li>
+<p><strong><code>&lt;footer class=&quot;footer&quot;&gt;</code></strong> — подвал с копирайтом</p>
+</li>
+<li>
+<p><strong><code>#btnUpload</code></strong> — плавающая кнопка «+» для открытия формы загрузки (видна только авторизованным)</p>
+</li>
+</ul>
+<h2>CSS-файлы</h2>
+<table>
+<thead>
+<tr>
+<th>Файл</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>style.css</code></td>
+<td>CSS-переменные (цвета, тени), сброс стилей, базовые стили body, header, footer, кнопки, адаптив</td>
+</tr>
+<tr>
+<td><code>feed.css</code></td>
+<td>Сетка постов <code>.feed</code>, карточки <code>.post-card</code>, слайдер изображений, плавающая кнопка <code>#btnUpload</code></td>
+</tr>
+<tr>
+<td><code>form.css</code></td>
+<td>Стили форм: группы полей, сообщения об ошибках, список файлов, переключение форм</td>
+</tr>
+<tr>
+<td><code>modal.css</code></td>
+<td>Модальные окна: скрытие/показ (<code>display: flex</code>), фон с блюром, анимация, кнопка закрытия</td>
+</tr>
+<tr>
+<td><code>font-awesome.min.css</code></td>
+<td>Иконки (Font Awesome)</td>
+</tr>
+</tbody>
+</table>
+<h2>Как работает приложение</h2>
+<ol>
+<li>При загрузке страницы (<code>DOMContentLoaded</code>) инициализируются все обработчики (см. <code>index.js</code>).</li>
+<li>Проверяется сессия через <code>refreshAccessToken()</code>.
+<ul>
+<li>Если пользователь сохранён — показывается интерфейс авторизованного (<code>showLoggedInUI</code>).</li>
+<li>Иначе — гостевой (<code>showGuestUI</code>).</li>
+</ul>
+</li>
+<li>Гость может войти или зарегистрироваться через модальные окна.</li>
+<li>После входа/регистрации интерфейс обновляется, загружается главная лента (<code>/api/feed</code>).</li>
+<li>Авторизованный пользователь может:
+<ul>
+<li>кликать на ник автора поста — загружается лента этого пользователя;</li>
+<li>нажать «Все посты» или логотип — возврат к общей ленте;</li>
+<li>кликнуть на своё имя в шапке — перейти к своей ленте;</li>
+<li>загрузить новый пост через кнопку «+» (форма внутри модалки).</li>
+</ul>
+</li>
+<li>Слайдер изображений внутри постов переключается кнопками ← → (функции <code>prevImage</code>/<code>nextImage</code>).</li>
+</ol>
+<h2>Подключение к JSDoc</h2>
+<p>Этот файл используется как readme для документации (см. <code>jsdoc.json</code>):</p>
+<pre class="prettyprint source lang-json"><code>&quot;opts&quot;: {
+  &quot;destination&quot;: &quot;./docs&quot;,
+  &quot;recurse&quot;: true,
+  &quot;readme&quot;: &quot;./README.md&quot;
+}</code></pre></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-main.html">main</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createPost">createPost</a></li><li><a href="global.html#createPostsHandlers">createPostsHandlers</a></li><li><a href="global.html#initLogoutHandler">initLogoutHandler</a></li><li><a href="global.html#initRepeatConfirmHandlers">initRepeatConfirmHandlers</a></li><li><a href="global.html#initSigninHandlers">initSigninHandlers</a></li><li><a href="global.html#initSignupHandlers">initSignupHandlers</a></li><li><a href="global.html#initUploadHandlers">initUploadHandlers</a></li><li><a href="global.html#loadAndRender">loadAndRender</a></li><li><a href="global.html#nextImage">nextImage</a></li><li><a href="global.html#prevImage">prevImage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 09 2026 12:52:03 GMT+0400 (Самарское стандартное время)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

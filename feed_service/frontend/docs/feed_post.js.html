@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: feed/post.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: feed/post.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import {loadMainFeed, loadUserFeedById, reloadFeed} from '../feed/feed.js';
+import noImage from '../../img/noimage.png';
+import {closeModal, showGuestUI} from "../index";
+import FeedAPI from "../client/feed_service.js";
+/**
+ * Переключает видимость изображений в слайдере поста на предыдущее.
+ *
+ * Находит текущее видимое изображение (с классом `showedImage`) внутри блока
+ * с id `images_${postId}` и, если существует предыдущий соседний элемент,
+ * скрывает текущее и показывает предыдущее.
+ *
+ * @function prevImage
+ * @param {number|string} postId - Идентификатор поста.
+ * @returns {void}
+ */
+function prevImage(postId) {
+    const imagesBlock = document.getElementById("images_" + postId);
+    if (!imagesBlock) return;
+    const currentImage = imagesBlock.querySelector(".showedImage");
+    if (!currentImage) return;
+    const prevImageLink = currentImage.parentElement.previousElementSibling;
+    if (prevImageLink &amp;&amp; prevImageLink.children.length !== 0) {
+        const prevImg = prevImageLink.children[0];
+        if (prevImg) {
+            currentImage.classList.remove('showedImage');
+            prevImg.classList.add('showedImage');
+        }
+    }
+}
+
+/**
+ * Переключает видимость изображений в слайдере поста на следующее.
+ *
+ * Находит текущее видимое изображение (с классом `showedImage`) внутри блока
+ * с id `images_${postId}` и, если существует следующий соседний элемент,
+ * скрывает текущее и показывает следующий.
+ *
+ * @function nextImage
+ * @param {number|string} postId - Идентификатор поста.
+ * @returns {void}
+ */
+function nextImage(postId) {
+    const imagesBlock = document.getElementById("images_" + postId);
+    if (!imagesBlock) return;
+    const currentImage = imagesBlock.querySelector(".showedImage");
+    if (!currentImage) return;
+    const nextImageLink = currentImage.parentElement.nextElementSibling;
+    if (nextImageLink &amp;&amp; nextImageLink.children.length !== 0) {
+        const nextImg = nextImageLink.children[0];
+        if (nextImg) {
+            currentImage.classList.remove('showedImage');
+            nextImg.classList.add('showedImage');
+        }
+    }
+}
+
+/**
+ * Генерирует HTML-разметку карточки поста со слайдером изображений.
+ *
+ * Использует `process.env.IS_URL` - URL ImageService - для формирования полного URL изображений.
+ * Если у поста есть несколько изображений, добавляет кнопки навигации.
+ *
+ * @function createPost
+ * @param {Object} post - Объект с данными поста.
+ * @param {number} post.id - Уникальный идентификатор поста.
+ * @param {number} [post.user_id] - ID автора поста.
+ * @param {string} [post.username] - Имя автора.
+ * @param {string} [post.title] - Заголовок поста.
+ * @param {string} [post.description] - Описание поста.
+ * @param {string} [post.created_at] - Дата создания.
+ * @param {Array&lt;number|string>} [post.images] - Массив идентификаторов изображений.
+ * @returns {string} HTML-строка с карточкой поста.
+ *
+ * @example
+ * const postHTML = createPost({ id: 1, title: "Закат", images: [101, 102] });
+ */
+export function createPost(post) {
+    let sliderImages = "&lt;div class='img-slider'>";
+
+    for (const imageId of post.images || []) {
+        sliderImages += `&lt;a href="${process.env.IS_URL}/api/guest/image/${imageId}" target="_blank">
+            &lt;img id="image_${imageId}" src="${process.env.IS_URL}/api/guest/image/${imageId}?type=icon" class="postImage">
+        &lt;/a>`;
+    }
+    sliderImages += "&lt;/div>";
+
+    const tools = `
+        &lt;div class="imageTools">
+            &lt;span class="imageBtn imagePrev" data-post-id="${post.id}" data-action="prev">
+                &lt;span class="fa fa-arrow-left">&lt;/span>
+            &lt;/span>
+            &lt;span class="imageBtn imageNext" data-post-id="${post.id}" data-action="next">
+                &lt;span class="fa fa-arrow-right">&lt;/span>
+            &lt;/span>
+        &lt;/div>`;
+
+    return `
+        &lt;div class="post-card" id="post_${post.id}">
+            &lt;div class="imagesSlider">
+                &lt;div class="images" id="images_${post.id}">
+                    ${sliderImages}
+                    ${post.images &amp;&amp; post.images.length > 1 ? tools : ''}
+                &lt;/div>
+            &lt;/div>
+            &lt;div class="post-body">
+                &lt;h3 class="post-title">${post.title || 'Без названия'}&lt;/h3>
+                &lt;p class="post-description">${post.description || ''}&lt;/p>
+                &lt;div class="post-meta">
+                    &lt;span class="post-author" data-user-id="${post.user_id}">${post.username || 'Аноним'}&lt;/span>
+                    &lt;span class="post-date">${post.created_at}&lt;/span>
+                &lt;/div>
+            &lt;/div>
+        &lt;/div>
+    `;
+}
+
+/**
+ * Навешивает обработчики событий на элементы внутри постов после рендеринга.
+ *
+ * - Первому изображению в каждом слайдере добавляет класс `showedImage`.
+ * - Для кнопок `.imagePrev` и `.imageNext` делегирует вызовы `prevImage` и `nextImage`.
+ * - Для элементов `.post-author` добавляет клик-обработчик, загружающий ленту автора,
+ *   если текущий пользователь подтверждён.
+ *
+ * @function createPostsHandlers
+ * @returns {void}
+ */
+export function createPostsHandlers() {
+    // Показать первые изображения
+    document.querySelectorAll('.img-slider a:first-child .postImage').forEach(el => {
+        el.classList.add("showedImage");
+    });
+
+    // Ловим все ошибки загрузки картинок на странице на фазе перехвата
+    document.addEventListener('error', (event) => {
+        if (event.target.tagName.toLowerCase() === 'img') {
+            event.target.src = noImage; // Подставляем заглушку
+        }
+    }, true); // &lt;- Важно: true включает перехват (capture)
+
+
+    // Делегирование навигации слайдера
+    document.querySelectorAll('.imagePrev, .imageNext').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const postId = e.currentTarget.dataset.postId;
+            const action = e.currentTarget.dataset.action;
+            if (action === 'prev') {
+                prevImage(postId);
+            } else if (action === 'next') {
+                nextImage(postId);
+            }
+        });
+    });
+
+    // Обработчики клика по автору
+    document.querySelectorAll('.post-author').forEach(el => {
+        el.addEventListener('click', async (e) => {
+            const user = await FeedAPI.getUserData();
+            if (!user) {
+                showGuestUI();
+                return;
+            }
+            const userId = e.target.dataset.userId;
+            if (userId &amp;&amp; user.data.is_confirmed) {
+                loadUserFeedById(parseInt(userId));
+            }
+        });
+    });
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-main.html">main</a></li></ul><h3>Global</h3><ul><li><a href="global.html#createPost">createPost</a></li><li><a href="global.html#createPostsHandlers">createPostsHandlers</a></li><li><a href="global.html#initLogoutHandler">initLogoutHandler</a></li><li><a href="global.html#initRepeatConfirmHandlers">initRepeatConfirmHandlers</a></li><li><a href="global.html#initSigninHandlers">initSigninHandlers</a></li><li><a href="global.html#initSignupHandlers">initSignupHandlers</a></li><li><a href="global.html#initUploadHandlers">initUploadHandlers</a></li><li><a href="global.html#loadAndRender">loadAndRender</a></li><li><a href="global.html#nextImage">nextImage</a></li><li><a href="global.html#prevImage">prevImage</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Thu Jul 09 2026 12:52:03 GMT+0400 (Самарское стандартное время)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -7,7 +7,6 @@ import (
 	model "github.com/tokyobordel/traineepkg/models"
 	"golang.org/x/crypto/bcrypt"
 
-	"log"
 	"traineesheep/feedservice/internal/client/notify_service"
 	"traineesheep/feedservice/internal/repository"
 	"traineesheep/feedservice/internal/utils"
@@ -55,10 +54,6 @@ func (us *AuthService) Register(pass string, login string, data map[string]strin
 	user, err := us.UserDAO.CreateUser(userData)
 	if err != nil {
 		return model.User{}, err
-	}
-	err = us.NotifyClient.NotifyRegisterForAdmin(userData.Username, userData.Email)
-	if err != nil {
-		log.Println(err.Error())
 	}
 
 	token, err := middleware.GenerateConfirmToken(user.ID)

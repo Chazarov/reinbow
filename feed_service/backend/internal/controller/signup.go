@@ -87,7 +87,18 @@ func (ctrl *Controller) Signup(c fiber.Ctx) error {
 
 	user, userError := ctrl.AuthService.Register(input.Password, input.Username,
 		map[string]string{"email": input.Email})
-
+	err := ctrl.UserService.NotifyClient.NotifyRegisterForAdmin(input.Username, input.Email)
+	if err != nil {
+		logger.Error().
+			Str("username", input.Username).
+			Str("path", c.Path()).
+			Msg("Ошибка отправки уведомления: " + err.Error())
+	} else {
+		logger.Info().
+			Str("username", input.Username).
+			Str("path", c.Path()).
+			Msg("Уведомление отправлено ")
+	}
 	if userError != nil {
 		logger.Error().
 			Str("username", input.Username).

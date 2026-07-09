@@ -12,6 +12,9 @@ import (
 // и кладёт в контекст логгер, уже содержащий этот идентификатор.
 func RequestIDMiddleware() fiber.Handler {
 	return func(c fiber.Ctx) error {
+		if c.Path() == "/health" {
+			return c.Next()
+		}
 		// Попробуем взять trace_id из заголовка X-Request-ID
 		traceID := c.Get("X-Request-ID")
 		if traceID == "" {
