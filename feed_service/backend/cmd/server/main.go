@@ -8,9 +8,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 	"traineesheep/feedservice/internal/app"
 	ISC "traineesheep/feedservice/internal/client/image_service"
-	NSC "traineesheep/feedservice/internal/client/notify"
+	NSC "traineesheep/feedservice/internal/client/notify_service"
 	"traineesheep/feedservice/internal/controller"
 	"traineesheep/feedservice/internal/database"
 	"traineesheep/feedservice/internal/repository"
@@ -19,6 +20,8 @@ import (
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/tokyobordel/traineepkg/authorization/jwt"
+	"github.com/tokyobordel/traineepkg/smtp"
 )
 
 // main — точка входа приложения.
@@ -40,7 +43,15 @@ func main() {
 	app := app.New() // создаём и конфигурируем fiber-приложение
 
 	// Настройка сервисов, клиентов и DAO
-	notifyClient := NSC.NewNotifyClient(utils.GetEnv("NOTIFICATION_SERVICE_URL", ""))
+	smtpData, smtpError := utils.GetSMTPData()
+	if smtpError != nil {
+		log.Fatal(smtpError)
+	}
+	SMTPClient := smtp.NewSmtpClient(smtpData["SMTP_EMAIL"],
+		smtpData["SMTP_PASSWORD"],
+		smtpData["SMTP_HOST"],
+		smtpData["SMTP_PORT"])
+	notifyClient := NSC.NewNotifyClient(utils.GetEnv("NOTIFICATION_SERVICE_URL", ""), SMTPClient)
 	userDAO := repository.NewUserDAO(db)
 	userService := service.NewUserService(userDAO, notifyClient)
 
@@ -48,11 +59,12 @@ func main() {
 	feedDAO := repository.NewFeedDAO(db)
 	feedService := service.NewFeedService(feedDAO, imageClient)
 
-	tokenDAO := repository.NewTokenDAO(db)
-	tokenService := service.NewTokenService(tokenDAO)
+	JWTSecret := utils.GetEnv("FEED_SERVICE_JWT_SECRET", "")
+	tokenService := jwt.NewService(JWTSecret, 5*time.Minute, 10*time.Minute)
+	authService := service.NewAuthService(userDAO, notifyClient)
 
 	// Задаем маршрутизацию
-	controller.Create(app, userService, feedService, tokenService)
+	controller.Create(app, userService, feedService, authService, tokenService)
 
 	// Запускаем сервер в горутине
 	addr := utils.GetEnv("BACKEND_HOST", ":8080")

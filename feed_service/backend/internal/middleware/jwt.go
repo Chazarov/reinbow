@@ -16,40 +16,33 @@ import (
 	"time"
 	"traineesheep/feedservice/internal/utils"
 
-	jwtware "github.com/gofiber/contrib/jwt"
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/contrib/v3/jwt"
+	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/extractors"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// jwtSecret — секретный ключ для подписи JWT. По умолчанию используется
-// значение, определённое в коде, но оно может быть переопределено через
-// переменную окружения FEED_SERVICE_JWT_SECRET.
-var jwtSecret = []byte(utils.GetEnv("FEED_SERVICE_JWT_SECRET",
-	"Vj1WlmufcUengSqzIINyliPacXQXbSj0YqfTSYI3iWZ"))
-
-// ConfirmRequired — middleware, требующий валидный token в параметрах запроса.
-// Используется для подтверждения регистрации.
-// При отсутствии или невалидном токене возвращает 500 с описанием ошибки.
-var ConfirmRequired = jwtware.New(jwtware.Config{
-	SigningKey:  jwtware.SigningKey{Key: jwtSecret},
-	TokenLookup: "query:token",
-	ErrorHandler: func(c *fiber.Ctx, err error) error {
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
-			Success: false, ErrMessage: err.Error(),
-		})
-	},
-})
-
-// GenerateAccessToken создаёт подписанный JWT access_token для указанного
-// пользователя. Токен действителен 5 минут.
-func GenerateAccessToken(userID int) (string, error) {
-	claims := jwt.MapClaims{
-		"sub": strconv.Itoa(userID),
-		"exp": time.Now().Add(5 * time.Minute).Unix(),
-		"iat": time.Now().Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+func ConfirmRequired(secret []byte) fiber.Handler {
+	return jwtware.New(jwtware.Config{
+		SigningKey: jwtware.SigningKey{
+			Key: secret,
+		},
+		Extractor: extractors.Extractor{
+			Extract: func(c fiber.Ctx) (string, error) {
+				value := c.Query("token")
+				if value == "" {
+					return "", fmt.Errorf("Нет токена")
+				}
+				return value, nil
+			},
+		},
+		ErrorHandler: func(c fiber.Ctx, err error) error {
+			return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
+				Success:    false,
+				ErrMessage: err.Error(),
+			})
+		},
+	})
 }
 
 // GenerateConfirmToken создаёт подписанный JWT token
@@ -61,19 +54,16 @@ func GenerateConfirmToken(userID int) (string, error) {
 		"iat": time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	return token.SignedString([]byte(utils.GetEnv("FEED_SERVICE_JWT_SECRET", "")))
 }
 
-// ParseToken проверяет и разбирает JWT токен, возвращая ID пользователя (sub).
-// В случае невалидного токена, неверной подписи или истечения срока возвращает
-// ошибку и 0.
-func ParseToken(tokenStr string) (int, error) {
+func ParseConfirmToken(tokenStr string, secret []byte) (int, error) {
 	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil,
 				fmt.Errorf("неподдерживаемый метод подписи")
 		}
-		return jwtSecret, nil
+		return secret, nil
 	})
 	if err != nil || !token.Valid {
 		return 0, err
@@ -85,62 +75,4 @@ func ParseToken(tokenStr string) (int, error) {
 	sub, _ := claims["sub"].(string)
 	id, _ := strconv.Atoi(sub)
 	return id, nil
-}
-
-// GenerateRefreshToken создаёт подписанный JWT refresh_token для указанного
-// пользователя. Токен действителен 10 минут.
-func GenerateRefreshToken(userID int) (string, error) {
-	claims := jwt.MapClaims{
-		"sub": strconv.Itoa(userID),
-		"exp": time.Now().Add(10 * time.Minute).Unix(),
-		"iat": time.Now().Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
-}
-
-// TokenAuth — middleware для проверки и автоматического обновления access-токена
-func TokenAuth(c *fiber.Ctx) error {
-	// Пытаемся прочитать и распарсить access_token
-	accessToken := c.Cookies("access_token")
-	if accessToken != "" {
-		claims, err := ParseToken(accessToken)
-		if err == nil {
-			// Токен валиден — продолжаем без лишних проверок
-			c.Locals("user", claims)
-			return c.Next()
-		}
-	}
-
-	// access_token отсутствует или невалиден — пробуем обновиться через refresh_token
-	refreshToken := c.Cookies("refresh_token")
-	if refreshToken == "" {
-		return unauthorized(c, "refresh_token отсутствует")
-	}
-
-	refreshClaims, err := ParseToken(refreshToken)
-	if err != nil {
-		return unauthorized(c, "refresh_token невалидный")
-	}
-
-	// Генерируем новый access_token
-	newAccessToken, err := GenerateAccessToken(refreshClaims)
-	if err != nil {
-		return unauthorized(c, "Ошибка генерации токена")
-	}
-
-	// Отправляем новый access_token клиенту
-	utils.SetTokens(c, newAccessToken, "")
-
-	// Сохраняем данные пользователя из refresh-токена. Прокидываем в эндпоинт
-	c.Locals("user", refreshClaims)
-	return c.Next()
-}
-
-// unauthorized — универсальный ответ 401
-func unauthorized(c *fiber.Ctx, message string) error {
-	return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-		"success": false,
-		"error":   message,
-	})
 }

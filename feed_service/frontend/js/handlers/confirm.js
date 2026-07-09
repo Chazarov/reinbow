@@ -2,7 +2,7 @@ import FeedAPI from '../client/feed_service'
 /**
  * Инициализирует обработчик кнопки повторной отправки письма подтверждения (`#repeat-confirm`).
  *
- * При клике отправляет GET-запрос на `/api/send_confirm` с ID сохранённого пользователя.
+ * При клике отправляет GET-запрос на `/users/me/confirmation` с ID сохранённого пользователя.
  * В случае ошибки выводит сообщение в элемент `#confirm-error`.
  *
  * @function initRepeatConfirmHandlers
@@ -10,7 +10,7 @@ import FeedAPI from '../client/feed_service'
  * @returns {void}
  *
  * @example
- * // Вызов после загрузки DOM
+ * Вызов после загрузки DOM
  * document.addEventListener('DOMContentLoaded', initRepeatConfirmHandlers);
  */
 export function initRepeatConfirmHandlers() {

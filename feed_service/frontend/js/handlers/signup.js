@@ -25,7 +25,7 @@
  * @returns {void}
  *
  * @example
- * // Вызов после загрузки DOM
+ * Вызов после загрузки DOM
  * document.addEventListener('DOMContentLoaded', initSignupHandlers);
  */
 import { closeModal, openModal, showLoggedInUI, toggleConfirmedUI } from '../index.js';

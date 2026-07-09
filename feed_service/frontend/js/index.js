@@ -49,12 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const switchToSignin = document.getElementById('switchToSignin');
     const closeButtons = document.querySelectorAll('.close');
 
-    // DOM-элементы для управления UI
-    const guestButtons = document.getElementById('guestButtons');
-    const userBlock = document.getElementById('userBlock');
-    const userNameDisplay = document.getElementById('userNameDisplay');
-    const uploadBtn = document.getElementById('btnUpload');
-
     // Обработчики открытия
     btnSignin.addEventListener('click', () => openModal(signinModal));
     btnSignup.addEventListener('click', () => openModal(signupModal));
@@ -80,9 +74,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    let mousedownTarget = null;
+
+    window.addEventListener('mousedown', (e) => {
+        mousedownTarget = e.target;
+    });
+
     // Закрытие по клику вне окна
     window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
+        if (e.target.classList.contains('modal') && mousedownTarget === e.target) {
             closeModal(e.target);
         }
     });
@@ -178,7 +178,7 @@ export function showLoggedInUI(user) {
 
     if (guestButtons) guestButtons.style.display = 'none';
     if (userBlock) userBlock.style.display = 'block';
-    if (userNameDisplay) userNameDisplay.textContent = user.username;
+    if (userNameDisplay) userNameDisplay.textContent = user.login;
     if (uploadBtn) uploadBtn.style.display = 'inline-flex';
 }
 
@@ -223,10 +223,10 @@ export async function toggleConfirmedUI() {
     const uploadBtn = document.getElementById('btnUpload');
 
     if (userNameDisplay && uploadBtn) {
-        user.is_confirmed
+        user.data.is_confirmed
             ? userNameDisplay.classList.remove("not-confirmed")
             : userNameDisplay.classList.add("not-confirmed");
-        user.is_confirmed
+        user.data.is_confirmed
             ? uploadBtn.style.display = 'inline-flex'
             : uploadBtn.style.display = 'none';
     }

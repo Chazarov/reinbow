@@ -5,7 +5,7 @@ import FeedAPI from '../client/feed_service.js';
  * Инициализирует обработчик клика по кнопке выхода (`#btnLogout`).
  *
  * При клике:
- * - Отправляет POST-запрос на `/api/logout` через клиент API
+ * - Отправляет POST-запрос на `/api/auth/logout` через клиент API
  *   (ошибка запроса игнорируется).
  * - Обновляет интерфейс вызовом {@link module:main.showGuestUI}.
  *

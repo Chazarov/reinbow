@@ -1,33 +1,24 @@
 package controller
 
 import (
-	"log"
-	"traineesheep/feedservice/internal/middleware"
 	"traineesheep/feedservice/internal/utils"
 
-	"github.com/gofiber/fiber/v2"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog"
 )
 
 // Signin обрабатывает POST-запрос на вход пользователя.
-//
-// Ожидает JSON с полями username и password. Проверяет существование
-// пользователя в базе и корректность пароля (сравнение с bcrypt-хешем).
-// При успехе генерирует access-токен (срок 5 минут) и refresh-токен
-// (срок 10 минут), устанавливает их в HttpOnly Secure куки.
-// Также отправляет уведомление о входе (notify.NotifyLogin).
-//
 // Возможные ответы:
 //   - 200: { success: true, data: { access_token, refresh_token, user } }
 //   - 400: { success: false, err_message: описание ошибки разбора }
 //   - 401: { success: false, err_message: "Неверное имя пользователя или пароль" }
 //   - 500: { success: false, err_message: "Неверное имя пользователя или пароль" }
-//   - 401: { success: false, err_message: "Ошибка создания access_token" }
-//   - 401: { success: false, err_message: "Ошибка создания refresh_token" }
-func (ctrl *Controller) Signin(c *fiber.Ctx) error {
+func (ctrl *Controller) Signin(c fiber.Ctx) error {
+	logger := c.Locals(utils.LoggerKey).(*zerolog.Logger)
 	input, parseError := utils.ParseUserData(c, false)
 	if parseError != nil {
-		log.Println(parseError)
+		logger.Warn().
+			Msg("Ошибка парсинга данных")
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -35,20 +26,12 @@ func (ctrl *Controller) Signin(c *fiber.Ctx) error {
 		})
 	}
 
-	user, userError := ctrl.UserService.GetByUsername(input.Username)
-
-	if userError != nil {
-		log.Println(userError)
-		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
-			Data:       nil,
-			Success:    false,
-			ErrMessage: "Неверное имя пользователя или пароль",
-		})
-	}
-
-	checkErr := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
+	user, checkErr := ctrl.AuthService.Login(input.Password, input.Username)
 	if checkErr != nil {
-		log.Println(checkErr)
+		logger.Warn().
+			Str("username", input.Username).
+			Str("path", c.Path()).
+			Msg("Неверное имя пользователя или пароль")
 		return c.Status(fiber.StatusUnauthorized).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -56,35 +39,32 @@ func (ctrl *Controller) Signin(c *fiber.Ctx) error {
 		})
 	}
 
-	accessToken, err := middleware.GenerateAccessToken(user.ID)
+	pair, err := ctrl.TokenService.GenerateTokenPair(user.ID)
 	if err != nil {
-		log.Println(err)
+		logger.Error().
+			Str("username", input.Username).
+			Str("path", c.Path()).
+			Msg("Ошибка создания токена: " + err.Error())
 		return c.Status(fiber.StatusUnauthorized).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
-			ErrMessage: "Ошибка создания access_token",
+			ErrMessage: "Ошибка создания токенов",
 		})
 	}
 
-	refreshToken, err := middleware.GenerateRefreshToken(user.ID)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusUnauthorized).JSON(utils.ApiResponse{
-			Data:       nil,
-			Success:    false,
-			ErrMessage: "Ошибка создания refresh_token",
-		})
-	}
+	utils.SetTokens(c, pair.AccessToken, pair.RefreshToken,
+		ctrl.TokenService.GetAccessTTL(),
+		ctrl.TokenService.GetRefreshTTL())
 
-	// Устанавливаем refresh_token и access_token в HttpOnly Secure куку
-	utils.SetTokens(c, accessToken, refreshToken)
-
-	log.Printf("POST /signin: Пользователь %s вошел в аккаунт", user.Username)
+	logger.Info().
+		Str("username", input.Username).
+		Str("path", c.Path()).
+		Msg("Пользователь вошел в аккаунт")
 	// Успех – возвращаем токен
 	return c.JSON(utils.ApiResponse{
 		Data: fiber.Map{
-			"access_token":  accessToken,
-			"refresh_token": refreshToken,
+			"access_token":  pair.AccessToken,
+			"refresh_token": pair.RefreshToken,
 			"user":          user,
 		},
 		Success:    true,

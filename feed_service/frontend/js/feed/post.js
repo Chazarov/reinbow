@@ -161,7 +161,7 @@ export function createPostsHandlers() {
                 return;
             }
             const userId = e.target.dataset.userId;
-            if (userId && user.is_confirmed) {
+            if (userId && user.data.is_confirmed) {
                 loadUserFeedById(parseInt(userId));
             }
         });

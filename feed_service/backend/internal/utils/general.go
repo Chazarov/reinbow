@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"net/mail"
 	"os"
+	"time"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 // ApiResponse – единый формат ответа API.
@@ -40,7 +41,7 @@ func GetEnv(key, fallback string) string {
 // Если validateEmail == true, дополнительно проверяет, что email имеет
 // корректный формат (через mail.ParseAddress).
 // Возвращает заполненную структуру UserData или ошибку с описанием.
-func ParseUserData(c *fiber.Ctx, validateEmail bool) (UserData, error) {
+func ParseUserData(c fiber.Ctx, validateEmail bool) (UserData, error) {
 	// Структура для парсинга данных пользователя
 	var input struct {
 		Username string `json:"username"`
@@ -48,7 +49,7 @@ func ParseUserData(c *fiber.Ctx, validateEmail bool) (UserData, error) {
 		Email    string `json:"email"`
 	}
 
-	if err := c.BodyParser(&input); err != nil {
+	if err := c.Bind().Body(&input); err != nil {
 		return UserData{}, fmt.Errorf("неверный формат запроса: %w", err)
 	}
 
@@ -67,32 +68,6 @@ func ParseUserData(c *fiber.Ctx, validateEmail bool) (UserData, error) {
 	return input, nil
 }
 
-func SetTokens(c *fiber.Ctx, accessToken string, refreshToken string) {
-	if accessToken != "" {
-		c.Cookie(&fiber.Cookie{
-			Name:     "access_token",
-			Value:    accessToken,
-			HTTPOnly: true,
-			Secure:   false,
-			SameSite: "Strict",
-			Path:     "/",
-			MaxAge:   5 * 60,
-		})
-	}
-
-	if refreshToken != "" {
-		c.Cookie(&fiber.Cookie{
-			Name:     "refresh_token",
-			Value:    refreshToken,
-			HTTPOnly: true,
-			Secure:   false,
-			SameSite: "Strict",
-			Path:     "/",
-			MaxAge:   10 * 60,
-		})
-	}
-}
-
 func GetSMTPData() (map[string]string, error) {
 	smtpHost := GetEnv("SMTP_HOST", "")
 	smtpPort := GetEnv("SMTP_PORT", "")
@@ -109,4 +84,10 @@ func GetSMTPData() (map[string]string, error) {
 		"SMTP_EMAIL":    smtpEmail,
 		"SMTP_PASSWORD": smtpPassword,
 	}, nil
+}
+
+type UserProfile struct {
+	Email       string    `json:"email"`
+	IsConfirmed bool      `json:"is_confirmed"`
+	CreatedAt   time.Time `json:"created_at"`
 }

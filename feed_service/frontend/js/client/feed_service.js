@@ -20,7 +20,10 @@ class FeedServiceClient {
 
     async getUserData() {
         try {
-            const data = await this.request("/api/get_user");
+            const data = await this.request("/api/users/me");
+            if (data?.user?.data) {
+                data.user.data.is_confirmed = data.user.data.is_confirmed === "true";
+            }
             return data.user;
         } catch {
             return undefined;
@@ -36,7 +39,7 @@ class FeedServiceClient {
 
     async logout() {
         try {
-            await fetch('/api/logout', {
+            await fetch('/api/auth/logout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -53,7 +56,7 @@ class FeedServiceClient {
      * @throws {Error} при других ошибках загрузки
      */
     async upload(formData) {
-        const response = await fetch('/api/upload', {
+        const response = await fetch('/api/posts', {
             method: 'POST',
             body: formData,
         });
@@ -76,8 +79,8 @@ class FeedServiceClient {
      * @throws {Error} при сетевой ошибке или ошибке сервера
      */
     async sendConfirmation() {
-        const response = await fetch('/api/send_confirm', {
-            method: 'GET',
+        const response = await fetch('/api/users/me/confirmation', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
         });
         const data = await response.json();
@@ -96,7 +99,7 @@ class FeedServiceClient {
      * @throws {Error} при ошибке регистрации или некорректном ответе
      */
     async signup(username, email, password) {
-        const response = await fetch('/api/signup', {
+        const response = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, email, password })
@@ -120,7 +123,7 @@ class FeedServiceClient {
      * @throws {Error} при неверных данных или сетевой ошибке
      */
     async signin(username, password) {
-        const response = await fetch('/api/signin', {
+        const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),

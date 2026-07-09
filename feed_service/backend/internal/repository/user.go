@@ -2,9 +2,11 @@ package repository
 
 import (
 	"database/sql"
+	"strconv"
 	"time"
-	models "traineesheep/feedservice/internal/model"
 	"traineesheep/feedservice/internal/utils"
+
+	"github.com/tokyobordel/traineepkg/models"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -23,23 +25,37 @@ func NewUserDAO(db *sql.DB) *UserDAO {
 // Пароль хэшируется с помощью bcrypt перед сохранением.
 // Возвращает созданную модель User и ошибку.
 func (ud *UserDAO) CreateUser(userData utils.UserData) (models.User, error) {
-	// Хэшируем пароль
+	var id int
+	var username string
+	var createdAt time.Time
+	var email string
+
 	hashedPassword, passError := bcrypt.GenerateFromPassword([]byte(userData.Password),
 		bcrypt.DefaultCost)
 	if passError != nil {
 		return models.User{}, passError
 	}
 
-	var user models.User
 	dbError := ud.db.QueryRow(
 		"INSERT INTO users (username, password, created_at, email) "+
 			"VALUES ($1, $2, $3, $4) RETURNING id, username, created_at, email",
 		userData.Username, string(hashedPassword), time.Now(), userData.Email,
-	).Scan(&user.ID, &user.Username, &user.CreatedAt, &user.Email)
+	).Scan(&id, &username, &createdAt, &email)
+
 	if dbError != nil {
 		return models.User{}, dbError
 	}
-	return user, nil
+	// Собираем целевую модель
+	result := models.User{
+		ID:    id,
+		Login: username, // сопоставляем логину имя пользователя
+		Data: map[string]string{
+			"email":        email,
+			"is_confirmed": strconv.FormatBool(false),
+			"created_at":   createdAt.Format(time.RFC3339),
+		},
+	}
+	return result, nil
 }
 
 // ExistsByUsername проверяет, существует ли пользователь с указанным именем.
@@ -72,26 +88,79 @@ func (ud *UserDAO) ExistsByEmail(email string) (bool, error) {
 
 // GetByUsername возвращает модель пользователя по его имени.
 // Если пользователь не найден, возвращается пустая структура и ошибка sql.ErrNoRows.
-func (ud *UserDAO) GetByUsername(username string) (models.User, error) {
-	var user models.User
+func (ud *UserDAO) GetPasswordHash(username string) (string, error) {
+	var hash string
 	err := ud.db.QueryRow(
-		"SELECT id, username, password, created_at, is_confirmed FROM users WHERE username = $1",
+		"SELECT password FROM users WHERE username = $1",
 		username,
-	).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt, &user.IsConfirmed)
+	).Scan(&hash)
+	if err != nil {
+		return "", err
+	}
+	return hash, nil
+}
 
-	return user, err
+// GetByUsername возвращает модель пользователя по его имени.
+// Если пользователь не найден, возвращается пустая структура и ошибка sql.ErrNoRows.
+func (ud *UserDAO) GetByUsername(username string) (models.User, error) {
+	var id int
+	var login string
+	var password string
+	var createdAt time.Time
+	var email string
+	var isConfirmed bool
+
+	err := ud.db.QueryRow(
+		"SELECT id, username, password, created_at, email, is_confirmed FROM users WHERE username = $1",
+		username,
+	).Scan(&id, &login, &password, &createdAt, &email, &isConfirmed)
+
+	if err != nil {
+		return models.User{}, err
+	}
+	// Собираем целевую модель
+	result := models.User{
+		ID:    id,
+		Login: username, // сопоставляем логину имя пользователя
+		Data: map[string]string{
+			"email":        email,
+			"is_confirmed": strconv.FormatBool(false),
+			"created_at":   createdAt.Format(time.RFC3339),
+		},
+	}
+	return result, nil
 }
 
 // GetByID возвращает модель пользователя по его идентификатору.
 // Если пользователь не найден, возвращается пустая структура и ошибка sql.ErrNoRows.
 func (ud *UserDAO) GetByID(userID int) (models.User, error) {
-	var user models.User
+	var id int
+	var login string
+	var password string
+	var createdAt time.Time
+	var email string
+	var isConfirmed bool
+
 	err := ud.db.QueryRow(
 		"SELECT id, username, password, created_at, is_confirmed, email FROM users WHERE id = $1",
 		userID,
-	).Scan(&user.ID, &user.Username, &user.Password, &user.CreatedAt, &user.IsConfirmed, &user.Email)
+	).Scan(&id, &login, &password, &createdAt, &isConfirmed, &email)
 
-	return user, err
+	if err != nil {
+		return models.User{}, err
+	}
+	// Собираем целевую модель
+	result := models.User{
+		ID:    id,
+		Login: login,
+		Data: map[string]string{
+			"email":        email,
+			"is_confirmed": strconv.FormatBool(isConfirmed),
+			"created_at":   createdAt.Format(time.RFC3339),
+		},
+	}
+
+	return result, nil
 }
 
 // ConfirmUserAccount подтверждает регистрацию пользователя.

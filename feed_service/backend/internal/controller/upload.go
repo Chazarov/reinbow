@@ -2,11 +2,12 @@ package controller
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"traineesheep/feedservice/internal/utils"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog"
+	"github.com/tokyobordel/traineepkg/adapters/api/v1/middleware/authjwt"
 )
 
 // Upload обрабатывает POST-запрос на загрузку изображений и создание поста.
@@ -19,10 +20,15 @@ import (
 //
 // Заголовки безопасности: требует валидный access-токен в куке для
 // идентификации пользователя.
-func (ctrl *Controller) Upload(c *fiber.Ctx) error {
+func (ctrl *Controller) Upload(c fiber.Ctx) error {
+	logger := c.Locals(utils.LoggerKey).(*zerolog.Logger)
+
 	// Проверяем Content-Type
 	contentType := string(c.Request().Header.ContentType())
 	if !strings.HasPrefix(contentType, "multipart/form-data") {
+		logger.Error().
+			Str("path", c.Path()).
+			Msg("Неправильный формат")
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 			Success: false, ErrMessage: "Ожидается multipart/form-data",
 		})
@@ -31,6 +37,9 @@ func (ctrl *Controller) Upload(c *fiber.Ctx) error {
 	// Парсим форму
 	form, err := c.MultipartForm()
 	if err != nil {
+		logger.Error().
+			Str("path", c.Path()).
+			Msg("Неправильный формат данных")
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 			Success: false, ErrMessage: "Неверный формат данных",
 		})
@@ -38,11 +47,17 @@ func (ctrl *Controller) Upload(c *fiber.Ctx) error {
 
 	files := form.File["images"] // поле, в котором фронт отправляет файлы
 	if len(files) == 0 {
+		logger.Error().
+			Str("path", c.Path()).
+			Msg("Нет изображений")
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 			Success: false, ErrMessage: "Не выбрано ни одного изображения",
 		})
 	}
 	if len(files) > 3 {
+		logger.Warn().
+			Str("path", c.Path()).
+			Msg("Превышен лимит изображений")
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 			Success: false, ErrMessage: "Максимальное количество изображений — 3",
 		})
@@ -51,9 +66,13 @@ func (ctrl *Controller) Upload(c *fiber.Ctx) error {
 	const maxFileSize = 2 << 20 // 2 МБ
 	for _, file := range files {
 		if file.Size > maxFileSize {
+			msg := fmt.Sprintf("Файл '%s' превышает 2 МБ", file.Filename)
+			logger.Error().
+				Str("path", c.Path()).
+				Msg(msg)
 			return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 				Success:    false,
-				ErrMessage: fmt.Sprintf("Файл '%s' превышает 2 МБ", file.Filename),
+				ErrMessage: msg,
 			})
 		}
 	}
@@ -66,19 +85,13 @@ func (ctrl *Controller) Upload(c *fiber.Ctx) error {
 		title = "Без названия"
 	}
 
-	userID, ok := c.Locals("user").(int)
-
-	if !ok {
-		log.Println("Отсутствует ID внутри контекста")
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
-			Data:       nil,
-			Success:    false,
-			ErrMessage: "Некорректные данные",
-		})
-	}
+	userID := c.Context().Value(authjwt.UserIDContextKey).(int)
 
 	post, postError := ctrl.FeedService.CreatePost(userID, title, description, files)
 	if postError != nil {
+		logger.Error().
+			Str("path", c.Path()).
+			Msg("Ошибка создания поста: " + postError.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
 			Success:    false,
 			Data:       nil,
@@ -86,10 +99,15 @@ func (ctrl *Controller) Upload(c *fiber.Ctx) error {
 		})
 	}
 
-	log.Printf("POST /upload: Пользователь %s отправил %d фото, создан пост с ID=%d",
+	msg := fmt.Sprintf("POST /upload: Пользователь %s отправил %d фото, создан пост с ID=%d",
 		userID,
 		len(post.Images),
 		post.ID)
+	logger.Info().
+		Int("user_id", userID).
+		Str("path", c.Path()).
+		Msg(msg)
+
 	return c.Status(fiber.StatusCreated).JSON(utils.ApiResponse{
 		Success: true,
 		Data: fiber.Map{

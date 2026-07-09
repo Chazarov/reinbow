@@ -1,46 +1,61 @@
 package controller
 
 import (
-	"log"
-	client "traineesheep/feedservice/internal/client/notify"
+	"traineesheep/feedservice/internal/middleware"
 	"traineesheep/feedservice/internal/utils"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog"
+	"github.com/tokyobordel/traineepkg/adapters/api/v1/middleware/authjwt"
 )
 
-func (ctrl *Controller) SendConfirm(c *fiber.Ctx) error {
-	userID, ok := c.Locals("user").(int)
+func (ctrl *Controller) SendConfirm(c fiber.Ctx) error {
+	logger := c.Locals(utils.LoggerKey).(*zerolog.Logger)
 
-	if !ok {
-		log.Println("Отсутствует ID внутри контекста")
-		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
-			Data:       nil,
-			Success:    false,
-			ErrMessage: "Некорректные данные",
-		})
-	}
+	userID := c.Context().Value(authjwt.UserIDContextKey).(int)
 
-	user, userError := ctrl.UserService.GetByID(userID)
+	user, userError := ctrl.AuthService.GetMe(userID)
 	if userError != nil {
-		log.Println("Передан некорректный user_id")
+		logger.Error().
+			Int("user_id", userID).
+			Str("path", c.Path()).
+			Msg("Ошибка выборки данных из БД: " + userError.Error())
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 			Data:       "Некорректные данные",
 			Success:    true,
 			ErrMessage: "",
 		})
 	}
-
-	sendError := client.SendConfirmationEmail(user)
-	if sendError != nil {
-		log.Printf("GET /send_confirm: Ошибка отправки уведомления на почту %s")
+	email, ok := user.Data["email"]
+	if !ok {
+		logger.Error().
+			Str("email", email).
+			Str("path", c.Path()).
+			Msg("Некорректный Email")
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
-			Data:       "Ошибка отправки уведомления на почту. Попробуй позж",
+			Data:       "Ошибка отправки уведомления на почту. Попробуйте позже",
 			Success:    true,
 			ErrMessage: "",
 		})
 	}
+	token, err := middleware.GenerateConfirmToken(userID)
+	if err != nil {
+		logger.Error().
+			Str("email", email).
+			Str("path", c.Path()).
+			Msg("Ошибка создания т: " + err.Error())
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
+			Data:       "Ошибка отправки уведомления на почту. Попробуй позже",
+			Success:    true,
+			ErrMessage: "",
+		})
+	}
+	ctrl.UserService.NotifyClient.SendConfirmationEmail(user.Login, email, token)
 
-	log.Printf("GET /send_confirm: Отправлено уведомление на почту %s", user.Email)
+	logger.Error().
+		Str("username", user.Login).
+		Str("path", c.Path()).
+		Msg("Уведомление о подтверждении отправлено")
 	return c.JSON(utils.ApiResponse{
 		Data:       "Уведомление о подтверждении отправлено",
 		Success:    true,

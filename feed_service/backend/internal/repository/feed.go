@@ -7,7 +7,7 @@ package repository
 
 import (
 	"database/sql"
-	models "traineesheep/feedservice/internal/model"
+	"traineesheep/feedservice/internal/model"
 
 	"github.com/lib/pq"
 )

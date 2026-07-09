@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -117,8 +116,8 @@ func (isc *ImageClient) SaveFiles(files []*multipart.FileHeader) ([]int, error) 
 
 		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 			bodyBytes, _ := io.ReadAll(resp.Body)
-			log.Printf("Ошибка внешнего сервиса: статус %d, тело %s", resp.StatusCode, string(bodyBytes))
-			return nil, fmt.Errorf("ImageService вернул ошибку")
+			return nil, fmt.Errorf(fmt.Sprintf("Ошибка внешнего сервиса: статус %d, тело %s",
+				resp.StatusCode, string(bodyBytes)))
 		}
 
 		var extResp utils.ApiResponse

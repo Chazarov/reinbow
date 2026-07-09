@@ -1,12 +1,13 @@
 package controller
 
 import (
-	"log"
+	"fmt"
 	"strconv"
-	models "traineesheep/feedservice/internal/model"
+	"traineesheep/feedservice/internal/model"
 	"traineesheep/feedservice/internal/utils"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog"
 )
 
 // Feed обрабатывает GET-запросы на получение ленты постов.
@@ -20,7 +21,8 @@ import (
 //   - 200: { success: true, data: []Post }
 //   - 400: { success: false, err_message: "Некорректный user_id" }
 //   - 500: { success: false, err_message: "Ошибка получения постов" }
-func (ctrl *Controller) Feed(c *fiber.Ctx) error {
+func (ctrl *Controller) Feed(c fiber.Ctx) error {
+	logger := c.Locals(utils.LoggerKey).(*zerolog.Logger)
 	userID := c.Query("user_id")
 
 	var posts []models.Post
@@ -31,6 +33,10 @@ func (ctrl *Controller) Feed(c *fiber.Ctx) error {
 	} else {
 		userIDInt, userIDError := strconv.Atoi(userID)
 		if userIDError != nil {
+			logger.Error().
+				Str("user_id", userID).
+				Str("path", c.Path()).
+				Msg("Ошибка парсинга user_id: : " + userIDError.Error())
 			return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 				Data:       nil,
 				Success:    false,
@@ -41,6 +47,9 @@ func (ctrl *Controller) Feed(c *fiber.Ctx) error {
 	}
 
 	if postsError != nil {
+		logger.Error().
+			Str("path", c.Path()).
+			Msg("Ошибка выборки данных из БД: " + postsError.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
 			Data:       posts,
 			Success:    false,
@@ -48,11 +57,11 @@ func (ctrl *Controller) Feed(c *fiber.Ctx) error {
 		})
 	}
 
-	if userID == "" {
-		log.Printf("GET /feed: Лента загружена, постов: %d", len(posts))
-	} else {
-		log.Printf("GET /feed/%s: Лента пользователя загружена, постов: %d", userID, len(posts))
-	}
+	logger.Info().
+		Str("user_id", userID).
+		Str("path", c.Path()).
+		Msg(fmt.Sprintf("Лента загружена, постов %d", len(posts)))
+
 	return c.Status(fiber.StatusOK).JSON(utils.ApiResponse{
 		Data:       posts,
 		Success:    true,

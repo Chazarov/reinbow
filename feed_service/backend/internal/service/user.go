@@ -1,11 +1,13 @@
 package service
 
 import (
-	"log"
-	client "traineesheep/feedservice/internal/client/notify"
-	"traineesheep/feedservice/internal/model"
+	"errors"
+	"strings"
+
+	"traineesheep/feedservice/internal/client/notify_service"
 	"traineesheep/feedservice/internal/repository"
-	"traineesheep/feedservice/internal/utils"
+
+	model "github.com/tokyobordel/traineepkg/models"
 )
 
 // UserService предоставляет методы для работы с пользователями:
@@ -15,32 +17,27 @@ type UserService struct {
 	NotifyClient *client.NotifyClient
 }
 
+type registerInput struct {
+	Email string
+}
+
+// parseRegisterData извлекает и валидирует данные из map
+func parseRegisterData(data map[string]string) (registerInput, error) {
+	input := registerInput{}
+
+	// Email обязателен
+	email, ok := data["email"]
+	if !ok || strings.TrimSpace(email) == "" {
+		return input, errors.New("email is required")
+	}
+	input.Email = email
+
+	return input, nil
+}
+
 // NewUserService создаёт новый экземпляр UserService с переданным DAO.
 func NewUserService(userDAO *repository.UserDAO, notifyClient *client.NotifyClient) *UserService {
 	return &UserService{UserDAO: userDAO, NotifyClient: notifyClient}
-}
-
-// CreateUser создаёт нового пользователя на основе переданных данных
-// и отправляет уведомление о регистрации
-// Возвращает созданную модель пользователя и ошибку.
-func (us *UserService) CreateUser(userdata utils.UserData) (models.User, error) {
-	user, err := us.UserDAO.CreateUser(userdata)
-	if err != nil {
-		return models.User{}, err
-	}
-	err = us.NotifyClient.NotifyRegisterForAdmin(user.Username, user.Email)
-	if err != nil {
-		log.Println(err.Error())
-	}
-	err = us.NotifyClient.SendUserdataEmail(userdata.Username, userdata.Password, user.Email)
-	if err != nil {
-		return models.User{}, err
-	}
-	err = client.SendConfirmationEmail(user)
-	if err != nil {
-		return models.User{}, err
-	}
-	return user, nil
 }
 
 // ExistsByUsername проверяет, существует ли пользователь с указанным именем.
@@ -57,14 +54,8 @@ func (us *UserService) ExistsByEmail(email string) (bool, error) {
 
 // GetByUsername возвращает модель пользователя по его имени.
 // Если пользователь не найден, возвращается пустая структура и ошибка sql.ErrNoRows.
-func (us *UserService) GetByUsername(username string) (models.User, error) {
+func (us *UserService) GetByUsername(username string) (model.User, error) {
 	return us.UserDAO.GetByUsername(username)
-}
-
-// GetByID возвращает модель пользователя по его идентификатору.
-// Если пользователь не найден, возвращается пустая структура и ошибка sql.ErrNoRows.
-func (us *UserService) GetByID(userID int) (models.User, error) {
-	return us.UserDAO.GetByID(userID)
 }
 
 // ConfirmUserAccount подтверждает регистрацию пользователя.

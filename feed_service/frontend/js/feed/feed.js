@@ -92,7 +92,7 @@ export function initFeed() {
                 showGuestUI();
                 return;
             }
-            if (user.id && user.is_confirmed) {
+            if (user.id && user.data.is_confirmed) {
                 loadUserFeed(user.id);
             } else if (confirmModal) {
                 openModal(confirmModal);

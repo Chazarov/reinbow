@@ -1,11 +1,10 @@
 package controller
 
 import (
-	"log"
-	"traineesheep/feedservice/internal/middleware"
 	"traineesheep/feedservice/internal/utils"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
+	"github.com/rs/zerolog"
 )
 
 // Signup обрабатывает POST-запрос на регистрацию нового пользователя.
@@ -19,9 +18,14 @@ import (
 //   - 400: { success: false, err_message: описание ошибки разбора }
 //   - 409: { success: false, err_message: "Пользователь с таким именем уже существует" }
 //   - 500: { success: false, err_message: "Ошибка базы данных" или "Не удалось создать пользователя. " }
-func (ctrl *Controller) Signup(c *fiber.Ctx) error {
+func (ctrl *Controller) Signup(c fiber.Ctx) error {
+	logger := c.Locals(utils.LoggerKey).(*zerolog.Logger)
+
 	input, parseError := utils.ParseUserData(c, true)
 	if parseError != nil {
+		logger.Warn().
+			Str("path", c.Path()).
+			Msg("Ошибка парсинга данных")
 		return c.Status(fiber.StatusBadRequest).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -32,6 +36,10 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 	isUserExists, dbError := ctrl.UserService.ExistsByUsername(input.Username)
 
 	if dbError != nil {
+		logger.Error().
+			Str("username", input.Username).
+			Str("path", c.Path()).
+			Msg("Запрос выборки из БД вернул ошибку: " + dbError.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -40,6 +48,10 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 	}
 
 	if isUserExists {
+		logger.Warn().
+			Str("username", input.Username).
+			Str("path", c.Path()).
+			Msg("Пользователь уже существует")
 		return c.Status(fiber.StatusConflict).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -50,6 +62,10 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 	isUserExists, dbError = ctrl.UserService.ExistsByEmail(input.Email)
 
 	if dbError != nil {
+		logger.Error().
+			Str("email", input.Email).
+			Str("path", c.Path()).
+			Msg("Запрос выборки из БД вернул ошибку: " + dbError.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -58,6 +74,10 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 	}
 
 	if isUserExists {
+		logger.Warn().
+			Str("email", input.Email).
+			Str("path", c.Path()).
+			Msg("Пользователь уже существует")
 		return c.Status(fiber.StatusConflict).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -65,9 +85,14 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 		})
 	}
 
-	user, userError := ctrl.UserService.CreateUser(input)
+	user, userError := ctrl.AuthService.Register(input.Password, input.Username,
+		map[string]string{"email": input.Email})
 
 	if userError != nil {
+		logger.Error().
+			Str("username", input.Username).
+			Str("path", c.Path()).
+			Msg("Ошибка регистрации пользователя: " + userError.Error())
 		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
@@ -75,28 +100,24 @@ func (ctrl *Controller) Signup(c *fiber.Ctx) error {
 		})
 	}
 
-	accessToken, err := middleware.GenerateAccessToken(user.ID)
+	pair, err := ctrl.TokenService.GenerateTokenPair(user.ID)
 	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusUnauthorized).JSON(utils.ApiResponse{
+		logger.Error().
+			Int("user_id", user.ID).
+			Msg("Сервис генерации токенов вернул ошибку: " + err.Error())
+		return c.Status(fiber.StatusInternalServerError).JSON(utils.ApiResponse{
 			Data:       nil,
 			Success:    false,
-			ErrMessage: "Ошибка создания access_token",
+			ErrMessage: "Не удалось создать пользователя. ",
 		})
 	}
+	utils.SetTokens(c, pair.AccessToken, pair.RefreshToken,
+		ctrl.TokenService.GetAccessTTL(),
+		ctrl.TokenService.GetRefreshTTL())
 
-	refreshToken, err := middleware.GenerateRefreshToken(user.ID)
-	if err != nil {
-		log.Println(err)
-		return c.Status(fiber.StatusUnauthorized).JSON(utils.ApiResponse{
-			Data:       nil,
-			Success:    false,
-			ErrMessage: "Ошибка создания refresh_token",
-		})
-	}
-	utils.SetTokens(c, accessToken, refreshToken)
-
-	log.Printf("POST /signup: Пользователь %s зарегистрирован", user.Username)
+	logger.Info().
+		Int("user_id", user.ID).
+		Msg("Пользователь создан")
 	// Успешная регистрация – возвращаем созданного пользователя
 	return c.Status(fiber.StatusCreated).JSON(utils.ApiResponse{
 		Data: fiber.Map{
