@@ -31,7 +31,23 @@ module.exports = {
 
     devServer: {
         port: 3000,
-        // ...
+        proxy: [
+            {
+                context: ['/api/auth'],
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
+            {
+                context: ['/api/notify_settings'],
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
+            {
+                context: ['/api/notify_types'],
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+            },
+        ],
     },
 
     plugins: [

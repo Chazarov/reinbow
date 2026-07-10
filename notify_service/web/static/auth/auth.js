@@ -5,6 +5,7 @@ import { GetSettings, hideDisabledRows } from '../settings/settings.js';
 import { initAllMultiselects, webhookUrls, webhookSelections, multiselectInstances, renderWebhookTable } from '../webhooks/webhooks.js';
 
 export let isLogged = false;
+let currentUser = null;
 
 /**
  * Закрывает модальное окно аутентификации
@@ -74,6 +75,14 @@ export async function loginProcedure() {
     }
 }
 
+function updateUIForLoggedOut() {
+    const notLogged = document.getElementById('notLogged');
+    const isAuthorized = document.getElementById('isAuthorized');
+
+    if (notLogged) notLogged.classList.remove('auth-hidden');
+    if (isAuthorized) isAuthorized.classList.add('auth-hidden');
+}
+
 /**
  * Обрабатывает процесс выхода пользователя из системы
  * Очищает токен из localStorage, сбрасывает состояние авторизации,
@@ -86,7 +95,6 @@ export async function logoutProcedure() {
         console.error('Logout error:', error);
     }
 
-    //localStorage.removeItem('token');
     isLogged = false;
 
     document.getElementById('loginField').value = "";
@@ -111,15 +119,15 @@ export async function restoreAuthState() {
         const userData = await api.getMe();
         // Если запрос успешен, считаем пользователя авторизованным
         isLogged = true;
-        currentUser = userData; // сохраняем данные
+        // Сохраняем данные пользователя (если ответ содержит поле data, берём его)
+        currentUser = userData.data || userData;
         updateUIForLoggedIn();
-        console.log('Сессия восстановлена, пользователь:', userData);
+        console.log('Сессия восстановлена, пользователь:', currentUser);
         // Дополнительно инициализируем остальные части приложения
         initAllMultiselects();
         await GetSettings();
         hideDisabledRows();
     } catch (error) {
-        // Ошибка (401 или другая) – пользователь не авторизован
         console.warn('Не удалось восстановить сессию:', error);
         isLogged = false;
         currentUser = null;
