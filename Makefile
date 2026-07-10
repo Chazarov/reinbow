@@ -1,4 +1,4 @@
-.PHONY: help env up down
+.PHONY: help env up down drop
 
 DEP_DIR := dep
 IMAGE_ENV := image_service/.env
@@ -30,3 +30,6 @@ up: env
 
 down:
 	cd $(DEP_DIR) && $(COMPOSE) down
+
+drop:
+	cd $(DEP_DIR) && $(COMPOSE) down -v
