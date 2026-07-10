@@ -44,20 +44,6 @@ services:
       sh -c "psql -h postgres -U postgres -d imageservice -v ON_ERROR_STOP=1 -f /migrations/initial_001.sql"
     restart: "no"
 
-  notify_db_init:
-    image: postgres:15-alpine
-    container_name: traineeship_notify_db_init
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PGPASSWORD: ${DB_PASSWORD:-12345678}
-    command: >
-      sh -c 'if [ "$$(psql -h postgres -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '"'"'notifyservice'"'"'")" != "1" ]; then
-               psql -h postgres -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE notifyservice";
-             fi'
-    restart: "no"
-
   image_app:
     build:
       context: ../image_service
@@ -72,8 +58,6 @@ services:
         condition: service_healthy
       image_migrate:
         condition: service_completed_successfully
-      notify_backend:
-        condition: service_started
     environment:
       DB_HOST: postgres
       DB_PORT: "5432"
@@ -86,7 +70,7 @@ services:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: "8080"
       IMAGE_STORAGE_PATH: /data/images
-      NOTIFY_SERVICE_URL: http://notify_backend:8080
+      NOTIFY_SERVICE_URL: ${NOTIFY_SERVICE_URL:-http://10.64.10.237:8080}
       EXTERNAL_URL: http://localhost:3000/#/moderation
       DEFAULT_LOGS_PATH: logs/default
       CRITICAL_LOGS_PATH: logs/critical
@@ -134,8 +118,6 @@ services:
         condition: service_healthy
       image_app:
         condition: service_healthy
-      notify_backend:
-        condition: service_started
     environment:
       DEPLOYMENT_CONFIG: production
       DB_HOST: postgres
@@ -147,7 +129,7 @@ services:
       BACKEND_PORT: "8070"
       BACKEND_HOST: 0.0.0.0:8070
       FEED_SERVICE_JWT_SECRET: ${FEED_SERVICE_JWT_SECRET:-Vj1WlmufcUengSqzIINyliPacXQXbSj0YqfTSYI3iWZ}
-      NOTIFICATION_SERVICE_URL: http://notify_backend:8080/api
+      NOTIFICATION_SERVICE_URL: ${NOTIFY_SERVICE_URL:-http://10.64.10.237:8080}/api
       IMAGE_SERVICE_URL: http://image_app:8080/api
       SMTP_HOST: smtp.mail.ru
       SMTP_PORT: "465"
@@ -179,64 +161,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  notify_backend:
-    build:
-      context: ../notify_service
-      dockerfile: Dockerfile
-    container_name: traineeship_notify_backend
-    ports:
-      - "8082:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      notify_db_init:
-        condition: service_completed_successfully
-    environment:
-      DATABASE_CONNECT: postgres://postgres:${DB_PASSWORD:-12345678}@postgres:5432/notifyservice?sslmode=disable
-      BOT_TOKEN: ${NOTIFY_BOT_TOKEN:-8811451683:AAEcB0QOoMS5KpSU3PTiebVGskfEQNayXG0}
-      smtpHost: smtp.mail.ru
-      smtpPort: "465"
-      smtpEmail: rbsimageservice@mail.ru
-      smtpPassword: ${SMTP_PASSWORD:-jKk0fTUrE4EVwGFKodK8}
-      WORKER_COUNT: "20"
-      JWT_SECRET: ${JWT_SECRET:-changethiskey!!!}
-      admin_login: ${NOTIFY_ADMIN_LOGIN:-admin}
-      admin_password: ${NOTIFY_ADMIN_PASSWORD:-12345}
-      TG_ID: "924956695"
-    command: >
-      sh -c 'echo "Waiting for database..." &&
-             until pg_isready -h postgres -U postgres; do sleep 2; done &&
-             echo "Database ready, running notify migrations..." &&
-             migrate -source file://./migrations -database "$$DATABASE_CONNECT" up &&
-             echo "Migrations done, starting notify backend..." &&
-             exec ./backend'
-    restart: unless-stopped
-    networks:
-      default:
-      notify_internal:
-        aliases:
-          - backend
-
-  notify_frontend:
-    build:
-      context: ../notify_service/web
-      dockerfile: Dockerfile
-    container_name: traineeship_notify_frontend
-    ports:
-      - "3002:80"
-    depends_on:
-      notify_backend:
-        condition: service_started
-    restart: unless-stopped
-    networks:
-      - notify_internal
-
 volumes:
   postgres_data:
   image_data:
-
-networks:
-  default:
-    driver: bridge
-  notify_internal:
-    driver: bridge

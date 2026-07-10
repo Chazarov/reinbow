@@ -23,7 +23,7 @@ function prevImage(postId) {
         const prevImg = prevImageLink.children[0];
         if (prevImg) {
             currentImage.classList.remove('showed-image');
-            prevImg.classList.add('showedimage');
+            prevImg.classList.add('showed-image');
         }
     }
 }
@@ -48,7 +48,7 @@ function nextImage(postId) {
     if (nextImageLink && nextImageLink.children.length !== 0) {
         const nextImg = nextImageLink.children[0];
         if (nextImg) {
-            currentImage.classList.remove('showed-mage');
+            currentImage.classList.remove('showed-image');
             nextImg.classList.add('showed-image');
         }
     }

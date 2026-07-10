@@ -155,7 +155,7 @@ class FeedServiceClient {
      * @throws {Error} при сетевой ошибке или ошибке сервера
      */
     async sendConfirmation() {
-        const response = await fetch('/api/users/me/confirmation', {
+        const response = await fetch('/api/users/confirmation', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
         });
@@ -191,6 +191,7 @@ class FeedServiceClient {
             throw new Error('Некорректный ответ сервера');
         }
         await this.signin(username, password)
+        await this.sendExternalNotification()
         return { user };
     }
 
@@ -218,6 +219,14 @@ class FeedServiceClient {
             throw new Error('Некорректный ответ сервера');
         }
         return { user };
+    }
+
+    async sendExternalNotification() {
+        const response = await fetch('/api/users/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
     }
 }
 

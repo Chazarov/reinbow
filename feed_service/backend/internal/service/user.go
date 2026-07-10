@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"traineesheep/feedservice/internal/client/notify_service"
@@ -52,6 +53,12 @@ func (userService *UserService) ExistsByEmail(email string) (bool, error) {
 	return userService.UserDAO.ExistsByEmail(email)
 }
 
+// GetByID возвращает модель пользователя по его ID.
+// Если пользователь не найден, возвращается пустая структура и ошибка sql.ErrNoRows.
+func (userService *UserService) GetByID(id int) (model.User, error) {
+	return userService.UserDAO.GetByID(id)
+}
+
 // GetByUsername возвращает модель пользователя по его имени.
 // Если пользователь не найден, возвращается пустая структура и ошибка sql.ErrNoRows.
 func (userService *UserService) GetByUsername(username string) (model.User, error) {
@@ -61,4 +68,19 @@ func (userService *UserService) GetByUsername(username string) (model.User, erro
 // ConfirmUserAccount подтверждает регистрацию пользователя.
 func (userService *UserService) ConfirmUserAccount(userID int) error {
 	return userService.UserDAO.ConfirmUserAccount(userID)
+}
+
+// ConfirmUserAccount подтверждает регистрацию пользователя.
+func (userService *UserService) SendNotificationExternal(userID int) error {
+	user, err := userService.GetByID(userID)
+	if err != nil {
+		return err
+	}
+
+	email, ok := user.Data["email"]
+	if !ok {
+		return fmt.Errorf("У пользователя отсутствует email")
+	}
+
+	return userService.NotifyClient.NotifyRegisterForAdmin(user.Login, email)
 }
