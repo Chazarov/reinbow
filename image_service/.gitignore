@@ -1,0 +1,103 @@
+*.bkp
+*.env
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.github
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# IDE files
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# VS Code
+.vscode/
+*.code-workspace
+.history/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+/project/backend/logs/
+
+# Binary output
+/bin/
+/dist/
+/build/
+/out/
+
+# Coverage reports
+*.coverprofile
+coverage.html
+coverage.out
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Project specific
+/images/
+/data/
+/uploads/
+
+# Frontend (Node.js / Webpack)
+project/frontend/node_modules/
+project/frontend/dist/
+project/frontend/.cache/
+project/frontend/.webpack/
+project/frontend/npm-debug.log*
+project/frontend/yarn-debug.log*
+project/frontend/yarn-error.log*
+project/frontend/pnpm-debug.log*
+project/frontend/.npm/
+project/frontend/.eslintcache
+node_modules/
+dist/
+
+# Application binary
+/imageservice
+/*.exe
+/*.test
+
+# Debug files
+*.dbg
+*.pdb
+
+# Profiling output
+*.prof
+*.cpu
+*.mem
+
+# Configuration files with sensitive data
+*.secret.*
+*.private.*
+*config.local.*

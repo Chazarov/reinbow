@@ -1,0 +1,62 @@
+services:
+  frontend:
+    build:
+      context: "./frontend"
+      dockerfile: Dockerfile
+    stop_signal: SIGQUIT
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy # ждём, пока backend станет healthy
+    networks:
+      - feedservice-network
+
+  backend:
+    restart: unless-stopped
+    build:
+      context: "./backend"
+      dockerfile: Dockerfile
+    ports:
+      - "8070:8070"
+    environment:
+      - PUBLIC_HOST=10.64.10.66:8070
+    env_file:
+      - fs_backend.env
+    depends_on:
+      db:
+        condition: service_healthy # ждём, пока БД будет готова принимать подключения
+    healthcheck: # проверка готовности самого бэкенда
+      test: ["CMD", "curl", "-f", "http://localhost:8070/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - feedservice-network
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck: # проверка готовности PostgreSQL
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    networks:
+      - feedservice-network
+
+volumes:
+  pgdata:
+
+networks:
+  feedservice-network:
+    driver: bridge

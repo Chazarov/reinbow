@@ -1,0 +1,31 @@
+@startuml
+skinparam componentStyle rectangle
+left to right direction
+
+actor Client
+
+package "ImageFeedService" {
+    component "Controller" as Controller
+
+    component "UserService" as UserService
+    component "FeedService" as FeedService
+
+    database "UserDAO" as UserDAO
+    database "FeedDAO" as FeedDAO
+
+    Controller --> UserService
+    Controller --> FeedService
+
+    UserService --> UserDAO
+    FeedService --> FeedDAO
+}
+
+component "Image Service" as ImageService
+component "Notification Service" as NotificationService
+
+Client --> Controller
+
+FeedService --> ImageService : POST /api/images
+UserService --> NotificationService : POST /notify
+
+@enduml

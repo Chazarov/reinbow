@@ -1,0 +1,93 @@
+.moderation-page {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 70vh;
+    padding: 1rem;
+}
+
+.moderation-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 0.75rem;
+}
+
+.moderation-image-box {
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #d8d8d8;
+    border-radius: 6px;
+    display: flex;
+    height: 320px;
+    justify-content: center;
+    overflow: hidden;
+    width: min(80vw, 520px);
+}
+
+.moderation-image-box.is-empty::after {
+    color: #e46e6e;
+    content: "Изображений для модерации больше нет!";
+    font-size: 2rem;
+    font-weight: 1000;
+    width: 100%;
+    height: 10rem;
+    display: flex;
+    justify-content: center; 
+    text-align: center; 
+}
+
+
+
+.moderation-image {
+    display: block;
+    height: 100%;
+    object-fit: contain;
+    width: 100%;
+}
+
+.moderation-info {
+    color: #555555;
+    font-size: 0.92rem;
+    margin: 0.9rem 0 1rem;
+    min-height: 1rem;
+}
+
+
+.moderation-total-count {
+    color: #e04848;
+    font-size: 1.2em;
+    margin: 0.9rem 0 1rem;
+    min-height: 1.3rem;
+}
+
+
+.moderation-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.moderation-action {
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 700;
+    height: 120px;
+    width: 120px;
+}
+
+.moderation-action:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
+.moderation-action-approve {
+    background: #1f9d55;
+}
+
+.moderation-action-ban {
+    background: #d92d20;
+}

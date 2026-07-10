@@ -1,0 +1,87 @@
+.notification {
+    position: fixed;
+    left: 2%;
+    width: auto;
+    max-width: 500px;
+    min-width: 200px;
+    padding: 12px 20px;
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 2;
+    pointer-events: none;
+    display: block;
+    bottom: -100px;
+    opacity: 0;
+    transition: bottom 0.5s ease, opacity 0.5s ease;
+}
+
+.notification.pos-0 { bottom: 50px; }
+.notification.pos-1 { bottom: 150px; }
+.notification.pos-2 { bottom: 250px; }
+.notification.pos-3 { bottom: 350px; }
+.notification.pos-4 { bottom: 450px; }
+.notification.pos-5 { bottom: 550px; }
+.notification.pos-6 { bottom: 650px; }
+.notification.pos-7 { bottom: 750px; }
+.notification.pos-8 { bottom: 850px; }
+.notification.pos-9 { bottom: 950px; }
+
+.notification.visible {
+    opacity: 1;
+}
+
+.notification.out {
+    bottom: 120%;
+    opacity: 0;
+}
+
+.notification.hidden {
+    display: none;
+}
+
+.notification.success {
+    background-color: rgba(0, 255, 0, 0.75);
+}
+
+.notification.error {
+    background-color: rgba(255, 0, 0, 0.75);
+}
+
+.errorNotification {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: rgba(255, 0, 0, 0.9);
+    min-width: 200px;
+    max-width: 500px;
+    width: auto;
+    padding: 12px 20px;
+    z-index: 3;
+    box-shadow: 0 4px 8px var(--shadow-color);
+    word-wrap: break-word;
+    box-sizing: border-box;
+}
+
+.typeOfNotification {
+    color: white;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.errorText {
+    margin-left: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-weight: 600;
+}
+
+.errDesc {
+    display: block;
+    margin-top: 8px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 16px;
+    color: white;
+    word-wrap: break-word;
+}

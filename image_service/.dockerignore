@@ -1,0 +1,42 @@
+# Frontend — не нужен для сборки backend
+web/
+
+# Тесты и документация
+tests/
+docs/
+*.md
+
+# Git и IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Окружение и логи
+.env
+.env.*
+logs/
+*.log
+
+# Node.js артефакты
+node_modules/
+dist/
+
+# Бинарники и кеш сборки
+/imageservice
+*.exe
+*.test
+bin/
+build/
+out/
+tmp/
+temp/
+
+# Docker и CI (не нужны внутри образа app)
+docker-compose.yml
+Makefile
+
+# Данные и загрузки
+data/
+uploads/
+images/

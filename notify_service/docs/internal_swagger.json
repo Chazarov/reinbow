@@ -1,0 +1,238 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/api/get_notify_settings": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Возвращает список всех типов уведомлений с их настройками (Telegram, Email, Webhook).\nТребует JWT-токен в заголовке Authorization.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Получение настроек уведомлений",
+                "responses": {
+                    "200": {
+                        "description": "Список настроек",
+                        "schema": {
+                            "$ref": "#/definitions/types.NotifyTypeMessengerList"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notify": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Принимает запрос на отправку уведомления пользователю по указанному типу.\nПоддерживает отправку по Email, Telegram и Webhook в зависимости от настроек.\nТребует JWT-токен в заголовке Authorization (если не требуется, уберите @Security).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifications"
+                ],
+                "summary": "Отправка уведомления",
+                "parameters": [
+                    {
+                        "description": "Данные для отправки уведомления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.Recipent"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Уведомление успешно отправлено",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса или недопустимый тип уведомления",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован (отсутствует или невалидный JWT токен)",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notify_types": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Сохраняет настройки типов уведомлений (чекбоксы Telegram, Email, Webhook URL) в БД.\nТребует JWT-токен в заголовке Authorization.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "Сохранение настроек уведомлений",
+                "parameters": [
+                    {
+                        "description": "Список настроек для каждого типа уведомления",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/types.NotifyTypeMessengerList"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Настройки успешно сохранены",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    },
+                    "400": {
+                        "description": "Неверный формат запроса или ошибка при сохранении",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    },
+                    "401": {
+                        "description": "Неавторизован (отсутствует или невалидный JWT токен)",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера",
+                        "schema": {
+                            "$ref": "#/definitions/types.ResponseData"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "types.NotifyTypeMessenger": {
+            "type": "object",
+            "properties": {
+                "notify_description": {
+                    "description": "Описание уведомления",
+                    "type": "string"
+                },
+                "notify_type": {
+                    "description": "Тип уведмоления",
+                    "type": "string"
+                },
+                "wantEmail": {
+                    "description": "Отправляем ли на почту",
+                    "type": "boolean"
+                },
+                "wantTelegram": {
+                    "description": "Отправляем ли в телеграм",
+                    "type": "boolean"
+                },
+                "webhookUrls": {
+                    "description": "массив URL",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "types.NotifyTypeMessengerList": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Success     bool                  `json:\"Success\"`     // Успех или нет",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/types.NotifyTypeMessenger"
+                    }
+                }
+            }
+        },
+        "types.Recipent": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Почта пользователя",
+                    "type": "string"
+                },
+                "message": {
+                    "description": "Сообщение",
+                    "type": "string"
+                },
+                "notify_type": {
+                    "description": "Тип уведомления",
+                    "type": "string"
+                }
+            }
+        },
+        "types.ResponseData": {
+            "type": "object",
+            "properties": {
+                "err_message": {
+                    "description": "Сообщение об ошибке",
+                    "type": "string"
+                },
+                "success": {
+                    "description": "Удачный ли запрос",
+                    "type": "boolean"
+                },
+                "token": {
+                    "description": "Токен",
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

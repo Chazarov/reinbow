@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS client CASCADE;
+DROP TABLE IF EXISTS notify_type_message CASCADE;

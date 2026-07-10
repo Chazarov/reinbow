@@ -1,0 +1,397 @@
+basePath: /api
+definitions:
+  v1.APIResponse:
+    properties:
+      data: {}
+      err_message:
+        example: ""
+        type: string
+      spread_id:
+        example: uuid-запроса
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  v1.ImageListItem:
+    properties:
+      crated_at:
+        example: "2026-07-03T09:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      media_type:
+        example: jpeg
+        type: string
+      name:
+        example: test_image
+        type: string
+      status:
+        example: unmoderated
+        type: string
+    type: object
+  v1.ImageMetaResponse:
+    properties:
+      created_at:
+        example: "2026-07-03T09:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      media_type:
+        example: jpeg
+        type: string
+      name:
+        example: test_image
+        type: string
+      status:
+        example: unmoderated
+        type: string
+    type: object
+  v1.ImageStatusResponse:
+    properties:
+      id:
+        example: 1
+        type: integer
+      name:
+        example: test_image
+        type: string
+      status:
+        example: blocked
+        type: string
+      updated_at:
+        example: "2026-07-03T09:00:00Z"
+        type: string
+    type: object
+  v1.SwaggerAddImageRequest:
+    properties:
+      data:
+        example: <base64>
+        type: string
+      media_type:
+        example: jpeg
+        type: string
+      name:
+        example: test_image
+        type: string
+    type: object
+  v1.UnmoderatedImagesResponse:
+    properties:
+      count:
+        example: 1
+        type: integer
+      images:
+        items:
+          $ref: '#/definitions/v1.ImageListItem'
+        type: array
+      total_count:
+        example: 1
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Internal HTTP API сервиса изображений.
+  title: Image Service Internal API
+  version: "1.0"
+paths:
+  /admin/image/{id}:
+    get:
+      description: Возвращает бинарное содержимое изображения без гостевой обработки
+      parameters:
+      - description: ID изображения
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Тип изображения (icon)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      security:
+      - AccessToken: []
+      summary: Получение изображения (администратор)
+      tags:
+      - images
+  /guest/image/{id}:
+    get:
+      description: Возвращает бинарное содержимое изображения для неавторизованных
+        пользователей
+      parameters:
+      - description: ID изображения
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Тип изображения (icon)
+        in: query
+        name: type
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      summary: Получение изображения (гостевой доступ)
+      tags:
+      - images
+  /health:
+    get:
+      description: Проверяет доступность сервиса
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      summary: Health check
+      tags:
+      - system
+  /image:
+    get:
+      description: Возвращает все изображения в сервисе
+      parameters:
+      - description: Номер страницы (с нуля)
+        in: query
+        name: page
+        type: integer
+      - description: Размер страницы
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.UnmoderatedImagesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      summary: Список всех изображений с пагинацией
+      tags:
+      - images
+  /image/{id}/approve:
+    put:
+      description: Устанавливает изображению статус approved
+      parameters:
+      - description: ID изображения
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.ImageStatusResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      security:
+      - AccessToken: []
+      summary: Одобрение изображения
+      tags:
+      - images
+  /image/{id}/block:
+    put:
+      description: Устанавливает изображению статус blocked
+      parameters:
+      - description: ID изображения
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.ImageStatusResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      security:
+      - AccessToken: []
+      summary: Блокировка изображения
+      tags:
+      - images
+  /image/meta/{id}:
+    get:
+      description: Возвращает метаинформацию об изображении без бинарного содержимого
+      parameters:
+      - description: ID изображения
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.ImageMetaResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      summary: Метаданные изображения
+      tags:
+      - images
+  /image/unmoderated:
+    get:
+      description: Возвращает страницу изображений со статусом unmoderated
+      parameters:
+      - description: Номер страницы (с нуля)
+        in: query
+        name: page
+        type: integer
+      - description: Размер страницы
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.UnmoderatedImagesResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      security:
+      - AccessToken: []
+      summary: Список немодерированных изображений
+      tags:
+      - images
+  /image/upload:
+    post:
+      consumes:
+      - application/json
+      description: Сохраняет новое изображение со статусом unmoderated
+      parameters:
+      - description: Данные изображения
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/v1.SwaggerAddImageRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            allOf:
+            - $ref: '#/definitions/v1.APIResponse'
+            - properties:
+                data:
+                  $ref: '#/definitions/v1.ImageMetaResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/v1.APIResponse'
+      summary: Загрузка изображения
+      tags:
+      - images
+securityDefinitions:
+  AccessToken:
+    in: cookie
+    name: access_token
+    type: apiKey
+swagger: "2.0"

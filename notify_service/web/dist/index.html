@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Сервис уведомлений</title>
+    <!--
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/layout.css">
+    -->
+<script defer src="bundle.js"></script></head>
+<body>
+    <div class="notLogged" id="notLogged">
+        <p class="not_logged_text">Для доступа к сервису необходима авторизация!</p><br>
+        <div class="authorize_not_logged" id="autorize">
+            <button id="openModalBtn" class="auth_btn_not_logged">Авторизоваться</button>
+        </div>
+    </div>
+    <div class="black_overlay" id="blackBackground"></div>
+    
+    <div class="errorNotification notification" id="notification">
+        <div class="typeOfNotification">
+            <span class="errorText" id="errText">Ошибка</span>
+        </div>
+        <span class="errDesc" id="errorDescription">Чето чето</span>
+    </div>
+    
+    <div class="userAuthorized" id="isAuthorized">
+        <p>admin</p>
+        <button id="logoutBtn" class="btnLogout">Выйти</button>
+    </div>
+    
+    <center>
+        <div class="headerArea">
+            <h2 class="text-bold">Куда отправлять уведомления</h2>
+        </div>
+        <div class="container">
+            <div>
+                <div class="option">
+                    <center>
+                        <table class="table_main">
+                            <thead>
+                                <tr>
+                                    <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;">Параметр</th>
+                                    <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;">ID параметра</th>
+                                    <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;">Telegram</th>
+                                    <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;">Email</th>
+                                    <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;">Webhook</th>
+                                    <th style="border:1px solid transparent; padding:8px; text-align:center; background:#f9f9f9;">Действия</th>
+                                </tr>
+                            </thead>
+                            
+                            <tbody id="table_main_body">
+                                <tr data-notify-type="user_register">
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">Регистрация аккаунта</p></td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;">user_register</td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_reg"></td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_reg"></td>
+                                    <td style="border:1px solid transparent; padding:8px;">
+                                        <div class="webhook-multiselect-container" data-notify-type="user_register"></div>
+                                    </td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:center;">
+                                        <div class="actions-container">
+                                            <button class="webhook-action-btn edit" data-notify-type="user_register" title="Редактировать">✎</button>
+                                            <button class="webhook-action-btn delete delete-row-btn" data-notify-type="user_register" title="Удалить">×</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-notify-type="user_login">
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">Вход в аккаунт</p></td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;">user_login</td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_login"></td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_login"></td>
+                                    <td style="border:1px solid transparent; padding:8px;">
+                                        <div class="webhook-multiselect-container" data-notify-type="user_login"></div>
+                                    </td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:center;">
+                                        <div class="actions-container">
+                                            <button class="webhook-action-btn edit" data-notify-type="user_login" title="Редактировать">✎</button>
+                                            <button class="webhook-action-btn delete delete-row-btn" data-notify-type="user_login" title="Удалить">×</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-notify-type="user_imgVerdict">
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">Решение по проверке фото</p></td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;">user_imgVerdict</td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_user_imgVerdict"></td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_user_imgVerdict"></td>
+                                    <td style="border:1px solid transparent; padding:8px;">
+                                        <div class="webhook-multiselect-container" data-notify-type="user_imgVerdict"></div>
+                                    </td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:center;">
+                                        <div class="actions-container">
+                                            <button class="webhook-action-btn edit" data-notify-type="user_imgVerdict" title="Редактировать">✎</button>
+                                            <button class="webhook-action-btn delete delete-row-btn" data-notify-type="user_imgVerdict" title="Удалить">×</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-notify-type="admin_newImg">
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;"><p class="text">[admin] Новое фото для модерации</p></td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:left;">admin_newImg</td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="tg_admin_newImg"></td>
+                                    <td style="border:1px solid transparent; padding:8px;"><input type="checkbox" id="email_admin_newImg"></td>
+                                    <td style="border:1px solid transparent; padding:8px;">
+                                        <div class="webhook-multiselect-container" data-notify-type="admin_newImg"></div>
+                                    </td>
+                                    <td style="border:1px solid transparent; padding:8px; text-align:center;">
+                                        <div class="actions-container">
+                                            <button class="webhook-action-btn edit" data-notify-type="admin_newImg" title="Редактировать">✎</button>
+                                            <button class="webhook-action-btn delete delete-row-btn" data-notify-type="admin_newImg" title="Удалить">×</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="margin: 20px 0;">
+                            <button id="addCustomRowBtn" class="btnAddCustom">Добавить параметр</button>
+                        </div>
+                    </center>
+                </div>
+            </div>
+        </div>
+        
+        <div class="headerArea">
+            <h2 class="text-bold">Список Webhook'ов</h2>
+        </div>
+        
+        <div class="containerWebhooks">
+            <div class="webhookList_class">
+                <table class="webhookTable" id="webhookTable">
+                    <thead>
+                        <tr>
+                            <th>URL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="webhookTableBody">
+                        <!-- Строки будут генерироваться динамически -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="buttonArea">
+            <button class="btnSaveSettings" id="saveSettingsBtn">Сохранить изменения</button>
+        </div>
+        
+        <div class="modal_container" id="modalWindow">
+            <div class="krestik" id="closeModalBtn">
+                X
+            </div>
+            <p class="login_text">Вход в аккаунт</p>
+            <label for="loginField" class="text">Логин</label><br>
+            <input class="modal_login" id="loginField" type="text"><br>
+            <label for="passwordField" class="text">Пароль</label><br>
+            <input class="modal_password" id="passwordField" type="password"><br>
+            <button class="login-btn" id="loginBtn">Войти</button><br>
+        </div>
+    </center>
+
+    <!--
+    <script src="bundle.js"></script>
+    -->
+</body>
+</html>

@@ -1,0 +1,162 @@
+definitions:
+  types.NotifyTypeMessenger:
+    properties:
+      notify_description:
+        description: Описание уведомления
+        type: string
+      notify_type:
+        description: Тип уведмоления
+        type: string
+      wantEmail:
+        description: Отправляем ли на почту
+        type: boolean
+      wantTelegram:
+        description: Отправляем ли в телеграм
+        type: boolean
+      webhookUrls:
+        description: массив URL
+        items:
+          type: string
+        type: array
+    type: object
+  types.NotifyTypeMessengerList:
+    properties:
+      data:
+        description: Success     bool                  `json:"Success"`     // Успех
+          или нет
+        items:
+          $ref: '#/definitions/types.NotifyTypeMessenger'
+        type: array
+    type: object
+  types.Recipent:
+    properties:
+      email:
+        description: Почта пользователя
+        type: string
+      message:
+        description: Сообщение
+        type: string
+      notify_type:
+        description: Тип уведомления
+        type: string
+    type: object
+  types.ResponseData:
+    properties:
+      err_message:
+        description: Сообщение об ошибке
+        type: string
+      success:
+        description: Удачный ли запрос
+        type: boolean
+      token:
+        description: Токен
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /api/get_notify_settings:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Возвращает список всех типов уведомлений с их настройками (Telegram, Email, Webhook).
+        Требует JWT-токен в заголовке Authorization.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список настроек
+          schema:
+            $ref: '#/definitions/types.NotifyTypeMessengerList'
+        "401":
+          description: Неавторизован
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+      security:
+      - ApiKeyAuth: []
+      summary: Получение настроек уведомлений
+      tags:
+      - Settings
+  /api/notify:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Принимает запрос на отправку уведомления пользователю по указанному типу.
+        Поддерживает отправку по Email, Telegram и Webhook в зависимости от настроек.
+        Требует JWT-токен в заголовке Authorization (если не требуется, уберите @Security).
+      parameters:
+      - description: Данные для отправки уведомления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.Recipent'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Уведомление успешно отправлено
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+        "400":
+          description: Неверный формат запроса или недопустимый тип уведомления
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+        "401":
+          description: Неавторизован (отсутствует или невалидный JWT токен)
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+      security:
+      - ApiKeyAuth: []
+      summary: Отправка уведомления
+      tags:
+      - Notifications
+  /api/notify_types:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Сохраняет настройки типов уведомлений (чекбоксы Telegram, Email, Webhook URL) в БД.
+        Требует JWT-токен в заголовке Authorization.
+      parameters:
+      - description: Список настроек для каждого типа уведомления
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/types.NotifyTypeMessengerList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Настройки успешно сохранены
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+        "400":
+          description: Неверный формат запроса или ошибка при сохранении
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+        "401":
+          description: Неавторизован (отсутствует или невалидный JWT токен)
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/types.ResponseData'
+      security:
+      - ApiKeyAuth: []
+      summary: Сохранение настроек уведомлений
+      tags:
+      - Settings
+swagger: "2.0"

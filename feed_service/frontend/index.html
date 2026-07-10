@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ИН100ГРАММ</title>
+    </head>
+    <body>
+        <header class="header">
+            <div class="container header-content">
+                <h1 class="logo">ИН100ГРАММ</h1>
+                <nav class="nav">
+                    <div id="guestButtons">
+                        <button id="btnSignin" class="btn btn-outline"><span class="fa fa-sign-in"></span></button>
+                        <button id="btnSignup" class="btn btn-primary"><span class="fa fa-user-plus"></span></button>
+                    </div>
+                    <div id="userBlock" style="display: none;">
+                        <span id="user-name-display" class="user-name"></span>
+                        <button id="allPostsBtn" class="btn btn-outline" style="display: none;"><span class="fa fa-reply-all"></span></button>
+                        <button id="btnLogout" class="btn btn-outline"><span class="fa fa-sign-out"></span></button>
+                    </div>
+                </nav>
+            </div>
+        </header>
+
+        <main class="main">
+            <div class="container">
+                <div id="feedContainer" class="feed">
+                </div>
+                <div id="feedLoader" style="text-align: center; padding: 2rem; display: none;">
+                    Загрузка...
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <div class="container">
+                <p>Нам этот ваш ин100грамм нафиг не нужОн &copy; 2026</p>
+            </div>
+        </footer>
+
+        <div id="signinModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Вход</h2>
+                <form id="signinForm">
+                    <div class="form-group">
+                        <label for="signinUsername">Логин</label>
+                        <input type="text" id="signinUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signinPassword">Пароль</label>
+                        <input type="password" id="signinPassword" name="password" required>
+                    </div>
+                    <div id="signinError" class="error-message"></div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span class="processing fa fa-circle-o-notch fa-spin"></span>
+                        Войти
+                    </button>
+                </form>
+                <p class="switch-form">Нет аккаунта? <a href="#" id="switchToSignup">Зарегистрироваться</a></p>
+            </div>
+        </div>
+
+        <div id="signupModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Регистрация</h2>
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="signupUsername">Логин</label>
+                        <input type="text" id="signupUsername" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupEmail">Email</label>
+                        <input type="email" id="signupEmail" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupPassword">Пароль</label>
+                        <input type="password" id="signupPassword" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="signupConfirm">Повторите пароль</label>
+                        <input type="password" id="signupConfirm" name="confirm" required>
+                    </div>
+                    <div id="signupError" class="error-message"></div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span class="processing fa fa-circle-o-notch fa-spin"></span>
+                        Зарегистрироваться
+                    </button>
+                </form>
+                <p class="switch-form">Уже есть аккаунт? <a href="#" id="switchToSignin">Войти</a></p>
+            </div>
+        </div>
+
+        <div id="uploadModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Загрузить изображения</h2>
+                <form id="uploadForm">
+                    <div class="form-group">
+                        <label for="postTitle">Заголовок *</label>
+                        <input type="text" id="postTitle" name="title" placeholder="Введите заголовок" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="postDescription">Описание</label>
+                        <textarea id="postDescription" name="description" rows="3" placeholder="Необязательно"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fileInput">Выберите до 3 изображений (макс. 2 МБ каждое)</label>
+                        <input type="file" id="fileInput" name="images" accept="image/*" multiple required>
+                        <div id="fileList" class="file-list"></div>
+                    </div>
+                    <div id="uploadError" class="error-message"></div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span class="processing fa fa-circle-o-notch fa-spin"></span>
+                        Загрузить
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div id="confirmModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Подтверждение регистрации</h2>
+                <p>Благодарим Вас за регистрацию в нашем сервисе!
+                    Проверьте, пожалуйста, почту для подтверждения учётной записи. Если письмо не пришло, нажмите кнопку ниже
+                </p>
+                <div id="confirm-error" class="error-message"></div>
+                <button id="repeat-confirm" type="button" class="btn btn-primary btn-block">
+                    <span class="processing fa fa-circle-o-notch fa-spin"></span>
+                    Отправить повторно
+                </button>
+            </div>
+        </div>
+
+        <button id="btn-upload" class="btn btn-outline">+</button>
+    </body>
+</html>

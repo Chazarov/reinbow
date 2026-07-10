@@ -1,0 +1,3 @@
+.PHONY: docs
+docs:
+	gomarkdoc -o docs.md ./...

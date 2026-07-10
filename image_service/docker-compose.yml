@@ -1,0 +1,101 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: imageservice_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: imageservice
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/initial_001.sql:/docker-entrypoint-initdb.d/initial_001.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    container_name: imageservice_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: postgres:15-alpine
+    container_name: imageservice_migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./migrations/initial_001.sql:/migrations/initial_001.sql:ro
+    entrypoint: >
+      sh -c "psql -h postgres -U postgres -d imageservice -v ON_ERROR_STOP=1 -f /migrations/initial_001.sql"
+    restart: "no"
+
+  app:
+    build: ./
+    container_name: imageservice_app
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      TG_ADMIN_ID: "924956695"
+      DB_USER: postgres
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: imageservice
+      DB_SSLMODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: "8080"
+      IMAGE_STORAGE_PATH: /data/images
+      NOTIFY_SERVICE_URL: http://10.64.10.237:8080
+      EXTERNAL_URL: http://10.64.11.11:3000/#/moderation
+      DEFAULT_LOGS_PATH: logs/default
+      CRITICAL_LOGS_PATH: logs/critical
+      LOGGER_DEBUG: "true"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TTL: "30s"
+      JWT_REFRESH_TTL: "180m"
+    volumes:
+      - image_data:/data/images
+      - ./logs:/root/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    build: ./web
+    container_name: imageservice_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  image_data:
+  logs_data:

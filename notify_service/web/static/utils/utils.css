@@ -1,0 +1,155 @@
+:root {
+    --primary-color: #007bff;
+    --primary-hover: #0056b3;
+    --secondary-color: #ffffff;
+    --text-color: #333333;
+    --border-color: #e0e0e0;
+    --background-color: #f8f9fa;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
+
+.text {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.hidden-element {
+    display: none;
+}
+
+.headerArea {
+    width: 35%;
+    margin: 30px auto 20px;
+    border-bottom: 3px solid var(--primary-color);
+}
+
+.text-bold {
+    font-weight: 600;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    width: 70%;
+    margin: 20px auto;
+}
+
+.containerWebhooks {
+    margin-bottom: 30px;
+    width: 40%;
+    margin: 20px auto;
+}
+
+.webhookList_class {
+    display: flex;
+    justify-content: center;
+}
+
+.btnSaveSettings {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    margin: 20px 0;
+}
+
+.btnSaveSettings:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.btnLogout {
+    background-color: var(--secondary-color);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btnLogout:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.buttonArea {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.authorize_not_logged {
+    margin-top: 30px;
+}
+
+.option {
+    margin-top: 25px;
+    margin-bottom: 15px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+@media (max-width: 768px) {
+    .container,
+    .containerWebhooks {
+        width: 95%;
+    }
+
+    .headerArea {
+        width: 95%;
+    }
+
+    .webhookTable {
+        width: 50%;
+    }
+
+    .modal_container {
+        width: 80%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .url_input {
+        width: 90%;
+    }
+
+    .table_main th,
+    .table_main td {
+        padding: 8px;
+        font-size: 12px;
+    }
+}
