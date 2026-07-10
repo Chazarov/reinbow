@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"sync"
 	"syscall"
 	"time"
 	"traineesheep/notifyservice/internal/handlers"
@@ -17,6 +16,7 @@ import (
 	"github.com/go-telegram/bot"
 	"github.com/tokyobordel/traineepkg/adapters/api/v1/auth"
 	authMiddlewarePkg "github.com/tokyobordel/traineepkg/adapters/api/v1/middleware/authjwt"
+	"golang.org/x/sync/errgroup"
 
 	authSwagger "github.com/tokyobordel/traineepkg/adapters/api/v1/swagger"
 	authService "github.com/tokyobordel/traineepkg/auth/service"
@@ -52,7 +52,6 @@ func main() {
 	if errconv != nil {
 		log.Fatal().Msg("Telegram ID не может содержать что-то кроме цифр")
 	}
-
 	handlers.TelegramID = int64(tempVal)
 
 	requiredEnvVars := []string{"DATABASE_CONNECT", "BOT_TOKEN", "WORKER_COUNT", "JWT_SECRET"}
@@ -63,11 +62,16 @@ func main() {
 		}
 	}
 
-	var channelSize, err = strconv.Atoi(os.Getenv("WORKER_COUNT"))
+	workersCount, err := strconv.Atoi(os.Getenv("WORKER_COUNT"))
 	if err != nil {
-		log.Fatal().Msg("Error! Channel size can't be converted to int!")
+		log.Fatal().Msg("Error! WORKER_COUNT can't be converted to int!")
 		return
 	}
+
+	// Создаем errgroup с контекстом и устанавливаем лимит параллелизма
+	taskGroup, _ := errgroup.WithContext(types.Ctx)
+	taskGroup.SetLimit(workersCount)
+	handlers.TaskGroup = taskGroup
 
 	pool, err := pgxpool.New(ctx, os.Getenv("DATABASE_CONNECT"))
 	if err != nil {
@@ -79,7 +83,6 @@ func main() {
 	opts := []bot.Option{
 		bot.WithDefaultHandler(tgbot.Handler),
 	}
-
 	tgBot, err := bot.New(os.Getenv("BOT_TOKEN"), opts[0])
 	if err != nil {
 		log.Error().Msg("Error starting TG bot")
@@ -90,12 +93,8 @@ func main() {
 	email.SmtpHost = os.Getenv("smtpHost")
 	email.SmtpPort = os.Getenv("smtpHost")
 
-	grtChan := make(chan int, channelSize)
-	wg := new(sync.WaitGroup{})
-	// handlers.TgBot = tgBot
+	handlers.TgBot = tgBot
 	types.SqlConnection = pool
-	handlers.GrtChannels = grtChan
-	handlers.Wg = wg
 
 	app := fiber.New(fiber.Config{
 		AppName: "Notify Service v1.0",
@@ -126,7 +125,7 @@ func main() {
 
 	go func() {
 		log.Info().Msg("Telegram bot has been started")
-		// tgBot.Start(ctx)
+		tgBot.Start(ctx)
 	}()
 
 	stop := make(chan os.Signal, 1)
@@ -140,16 +139,16 @@ func main() {
 		log.Info().Msg("Shutting down server...")
 
 		if err := app.Shutdown(); err != nil {
-			logMsg := fmt.Sprintf("HTTP server shutdown error: %v", err)
-			log.Error().Msg(logMsg)
+			log.Error().Msgf("HTTP server shutdown error: %v", err)
 		}
 
-		log.Info().Msg("Waiting for active requests to finish...")
-		wg.Wait()
+		log.Info().Msg("Waiting for active tasks to finish...")
+		if err := handlers.TaskGroup.Wait(); err != nil {
+			log.Error().Msgf("Task group error: %v", err)
+		}
 
 		if _, err := tgBot.Close(ctx); err != nil {
-			logMsg := fmt.Sprintf("Ошибка при отключении ТГ бота: %v", err)
-			log.Error().Msg(logMsg)
+			log.Error().Msgf("Ошибка при отключении ТГ бота: %v", err)
 		}
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sync"
 	"traineesheep/notifyservice/internal/database"
 	"traineesheep/notifyservice/internal/errs"
 	"traineesheep/notifyservice/internal/tgbot"
@@ -53,7 +54,6 @@ var TelegramID int64
 // @Security ApiKeyAuth
 func HandleNotify(w http.ResponseWriter, r *http.Request) {
 	uid := ulid.Make()
-
 	var response types.ResponseData
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	var req types.Recipent
@@ -66,56 +66,42 @@ func HandleNotify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Ограничиваем количество одновременно запущенных горутин
-	// Чтобы обрабатывать одновременно за раз не больше WORKER_COUNT
-	Wg.Add(1)
-	defer Wg.Done()
-
-	grtChan := GrtChannels
-	grtChan <- 1
-	defer func() { <-grtChan }()
-
-	body_data, err := io.ReadAll(r.Body)
+	// --- Чтение и валидация запроса (синхронно, до захвата слота) ---
+	bodyData, err := io.ReadAll(r.Body)
 	if err != nil {
 		response.Success = false
 		response.ErrorMessage = errs.ErrReadingRequestMessage + err.Error()
-		responseByte, _ := json.MarshalIndent(response, "", "    ")
+		respBytes, _ := json.MarshalIndent(response, "", "    ")
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), response.ErrorMessage))
-		if _, err := w.Write(responseByte); err != nil {
-			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), errs.ErrWritingToRespBody))
-		}
+		w.Write(respBytes)
 		return
 	}
 
-	if err := json.Unmarshal(body_data, &req); err != nil {
+	if err := json.Unmarshal(bodyData, &req); err != nil {
 		response.Success = false
 		response.ErrorMessage = errs.ErrJsonUnmarshal + err.Error()
-		responseByte, _ := json.MarshalIndent(response, "", "    ")
+		respBytes, _ := json.MarshalIndent(response, "", "    ")
 		log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), response.ErrorMessage))
 		w.WriteHeader(http.StatusBadRequest)
-		if _, err := w.Write(responseByte); err != nil {
-			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), errs.ErrWritingToRespBody))
-		}
+		w.Write(respBytes)
 		return
 	}
 
-	logMessage = fmt.Sprintf("Был получен запрос на тип %v\n", req.NotifyType)
-	log.Info().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
-	logMessage = fmt.Sprintf("Сообщение для отправки: \"%v\"\n", req.Message)
-	log.Info().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
+	log.Info().Msg(fmt.Sprintf("%v Получен запрос на тип %v", uid.String(), req.NotifyType))
+	log.Info().Msg(fmt.Sprintf("%v Сообщение: \"%v\"", uid.String(), req.Message))
 
-	//var tgUserId int64 = 924956695 // ВРЕМЕННО ЗАХАРДКОЖЕН ID ДО РЕАЛИЗАЦИИ ПОЛУЧЕНИЯ ИЗ ЧАТА
-	var userEmail string = req.Email
-
-	var isAllowed bool = false
-
+	// --- Проверка допустимости типа уведомления ---
+	isAllowed := false
 	rows, err := database.GetNotifyTypes(types.Ctx)
 	if err != nil {
 		log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), err.Error()))
+		response.Success = false
+		response.ErrorMessage = "Ошибка получения типов уведомлений"
+		respBytes, _ := json.MarshalIndent(response, "", "    ")
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write(respBytes)
 		return
 	}
-
 	if len(notifyTypesAllowed) == 0 {
 		for rows.Next() {
 			var temp string
@@ -123,104 +109,99 @@ func HandleNotify(w http.ResponseWriter, r *http.Request) {
 			notifyTypesAllowed = append(notifyTypesAllowed, temp)
 		}
 	}
-
 	for _, elem := range notifyTypesAllowed {
 		if elem == req.NotifyType {
 			isAllowed = true
 			break
 		}
 	}
-
 	if !isAllowed {
 		response.Success = false
 		response.ErrorMessage = fmt.Sprintf("Недопустимый тип уведомления! %v", req.NotifyType)
-		responseByte, _ := json.MarshalIndent(response, "", "    ")
+		respBytes, _ := json.MarshalIndent(response, "", "    ")
 		log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), response.ErrorMessage))
 		w.WriteHeader(http.StatusBadRequest)
-		if _, err := w.Write(responseByte); err != nil {
-			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), errs.ErrWritingToRespBody))
-			return
-		}
+		w.Write(respBytes)
 		return
 	}
 
-	// Если пользователь зарегался, то добавляю в свою базу его почту и user_id и выхожу
+	// --- Обработка регистрации (выполняется синхронно, без ограничения) ---
 	if req.NotifyType == "user_register" {
-		if err := database.AddEmail(types.Ctx, userEmail); err != nil {
+		if err := database.AddEmail(types.Ctx, req.Email); err != nil {
 			response.Success = false
 			response.ErrorMessage = "При попытке добавить данные в базу произошла ошибка: " + err.Error()
-			responseByte, _ := json.MarshalIndent(response, "", "    ")
+			respBytes, _ := json.MarshalIndent(response, "", "    ")
 			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), response.ErrorMessage))
 			w.WriteHeader(http.StatusBadRequest)
-			if _, err := w.Write(responseByte); err != nil {
-				log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), errs.ErrWritingToRespBody))
-				return
-			}
+			w.Write(respBytes)
 			return
 		}
-		logMessage = "Регистрация пользователя успешна. Добавление в базу!\n"
-		log.Info().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
-		return // выходим, я больше не отправляю такие сообщения
-	}
-
-	var checks types.CheckboxesParams
-
-	emailsToSend := make([]string, 0)
-
-	// Получаем значения переключателей куда мы хотим получить уведомление
-	err, checks = database.GetCheckboxSettings(types.Ctx, req.NotifyType)
-	if err != nil {
-		logMessage = fmt.Sprintf("При обращении к базе данных произошла ошибка %v\n", err)
-		log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
+		response.Success = true
+		response.ErrorMessage = "Пользователь зарегистрирован"
+		respBytes, _ := json.MarshalIndent(response, "", "    ")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respBytes)
+		log.Info().Msg(fmt.Sprintf("%v Регистрация пользователя успешна", uid.String()))
 		return
 	}
 
-	notificationMessage := req.Message
+	// --- Основная задача: отправка уведомлений (ограничивается через errgroup) ---
+	// Используем WaitGroup для синхронизации внутри хендлера
+	var wg sync.WaitGroup
+	wg.Add(1)
 
-	// Если мы хотим уведомление в ТГ
-	if checks.WantTelegram {
-		if err := tgbot.SendMessage(TgBot, types.Ctx, TelegramID, notificationMessage); err != nil {
-			logMessage = fmt.Sprintf("Ошибка при отправке пользователю уведомления в Telegram: %v", err)
-			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
-		} else {
-			logMessage = fmt.Sprintf("Сообщение было доставлено в Telegram пользователю с id %v\n", TelegramID)
-			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
+	// Запускаем задачу через errgroup.Go – блокируется, если достигнут лимит
+	TaskGroup.Go(func() error {
+		defer wg.Done()
+		// Логика отправки (копия из исходного кода)
+		var checks types.CheckboxesParams
+		emailsToSend := make([]string, 0)
+
+		err, checks := database.GetCheckboxSettings(types.Ctx, req.NotifyType)
+		if err != nil {
+			log.Error().Msg(fmt.Sprintf("%v Ошибка получения настроек: %v", uid.String(), err))
+			return nil // не возвращаем ошибку, чтобы не останавливать группу
 		}
-	}
 
-	// Если мы хотим уведомление по Email
-	if checks.WantEmail {
-		emailsToSend = append(emailsToSend, userEmail)
-		if err := email.SendMessage(emailsToSend, notificationMessage, req.NotifyType); err != nil {
-			logMessage = fmt.Sprintf("Ошибка при отправке сообщения на почту: %v\n", err)
-			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
-		} else {
-			logMessage = fmt.Sprintf("Сообщение было доставлено на почту %v\n", userEmail)
-			log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
-		}
-	}
-
-	// Если мы хотим уведомление по Webhook
-	if len(checks.WantWebhook) != 0 {
-		for _, url := range checks.WantWebhook {
-			if err := webhook_handler.SendWebhookMessage(url, []byte(notificationMessage)); err != nil {
-				logMessage = fmt.Sprintf("Ошибка при отправке сообщения на адрес %v: %v\n", url, err)
-				log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
+		if checks.WantTelegram {
+			if err := tgbot.SendMessage(TgBot, types.Ctx, TelegramID, req.Message); err != nil {
+				log.Error().Msg(fmt.Sprintf("%v Ошибка отправки в Telegram: %v", uid.String(), err))
 			} else {
-				logMessage = fmt.Sprintf("Сообщение было доставлено на Webhook с URL %v\n", url)
-				log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
+				log.Info().Msg(fmt.Sprintf("%v Сообщение доставлено в Telegram", uid.String()))
 			}
 		}
-	}
 
+		if checks.WantEmail {
+			emailsToSend = append(emailsToSend, req.Email)
+			if err := email.SendMessage(emailsToSend, req.Message, req.NotifyType); err != nil {
+				log.Error().Msg(fmt.Sprintf("%v Ошибка отправки email: %v", uid.String(), err))
+			} else {
+				log.Info().Msg(fmt.Sprintf("%v Сообщение доставлено на почту %v", uid.String(), req.Email))
+			}
+		}
+
+		if len(checks.WantWebhook) != 0 {
+			for _, url := range checks.WantWebhook {
+				if err := webhook_handler.SendWebhookMessage(url, []byte(req.Message)); err != nil {
+					log.Error().Msg(fmt.Sprintf("%v Ошибка отправки webhook %v: %v", uid.String(), url, err))
+				} else {
+					log.Info().Msg(fmt.Sprintf("%v Сообщение доставлено на webhook %v", uid.String(), url))
+				}
+			}
+		}
+
+		log.Info().Msg(fmt.Sprintf("%v Отправка сообщений завершена", uid.String()))
+		return nil
+	})
+
+	// Ожидаем завершения задачи (синхронизация)
+	wg.Wait()
+
+	// Отправляем успешный ответ после выполнения
 	response.Success = true
 	response.ErrorMessage = ""
-	responseByte, _ := json.MarshalIndent(response, "", "    ")
+	respBytes, _ := json.MarshalIndent(response, "", "    ")
 	w.WriteHeader(http.StatusOK)
-	if _, err := w.Write(responseByte); err != nil {
-		log.Error().Msg(fmt.Sprintf("%v %v", uid.String(), errs.ErrWritingToRespBody))
-		return
-	}
-	logMessage = "Отправка сообщений была успешно завершена!"
-	log.Info().Msg(fmt.Sprintf("%v %v", uid.String(), logMessage))
+	w.Write(respBytes)
+	log.Info().Msg(fmt.Sprintf("%v Запрос обработан успешно", uid.String()))
 }

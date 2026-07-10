@@ -7,17 +7,18 @@ package handlers
 
 import (
 	"net/http"
-	"sync"
 
 	"github.com/go-telegram/bot"
 	"github.com/gorilla/websocket"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
-	TgBot                            *bot.Bot
-	GrtChannels                      chan int
-	Wg                               *sync.WaitGroup
+	TgBot *bot.Bot
+	// GrtChannels                      chan int
+	// Wg                               *sync.WaitGroup
 	AdminLogin, AdminPass, JwtSecret string
+	TaskGroup                        *errgroup.Group
 )
 
 // Переменная для создания WebSocket соединения
