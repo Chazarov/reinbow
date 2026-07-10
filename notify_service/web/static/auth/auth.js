@@ -80,7 +80,13 @@ export async function loginProcedure() {
  * очищает форму входа, обновляет UI и сбрасывает настройки вебхуков
  */
 export async function logoutProcedure() {
-    localStorage.removeItem('token');
+    try {
+        await api.logout(); // сервер удалит cookie
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+
+    //localStorage.removeItem('token');
     isLogged = false;
 
     document.getElementById('loginField').value = "";
@@ -100,30 +106,69 @@ export async function logoutProcedure() {
     showNotification('success', 'Успех', 'Выход из аккаунта успешен!');
 }
 
-/**
- * Восстанавливает состояние аутентификации при загрузке страницы
- * Проверяет наличие токена в localStorage и восстанавливает состояние авторизации
- */
-/**
- * Восстанавливает состояние аутентификации при загрузке страницы
- * Проверяет наличие токена в localStorage и восстанавливает состояние авторизации
- */
-export function restoreAuthState() {
-    const token = localStorage.getItem('token');
-
-    if (token) {
+export async function restoreAuthState() {
+    try {
+        const userData = await api.getMe();
+        // Если запрос успешен, считаем пользователя авторизованным
         isLogged = true;
-        document.getElementById('notLogged').classList.add('auth-hidden');
-        document.getElementById('isAuthorized').classList.remove('auth-hidden');
-        console.log("Добро пожаловать, admin");
+        currentUser = userData; // сохраняем данные
+        updateUIForLoggedIn();
+        console.log('Сессия восстановлена, пользователь:', userData);
+        // Дополнительно инициализируем остальные части приложения
         initAllMultiselects();
-        GetSettings().then(() => hideDisabledRows());
-    } else {
+        await GetSettings();
+        hideDisabledRows();
+    } catch (error) {
+        // Ошибка (401 или другая) – пользователь не авторизован
+        console.warn('Не удалось восстановить сессию:', error);
         isLogged = false;
-        document.getElementById('notLogged').classList.remove('auth-hidden');
-        document.getElementById('isAuthorized').classList.add('auth-hidden');
+        currentUser = null;
+        updateUIForLoggedOut();
     }
 }
+
+// Вспомогательные функции для обновления UI
+function updateUIForLoggedIn() {
+    const notLogged = document.getElementById('notLogged');
+    const isAuthorized = document.getElementById('isAuthorized');
+    if (notLogged) notLogged.classList.add('auth-hidden');
+    if (isAuthorized) isAuthorized.classList.remove('auth-hidden');
+
+    // Обновляем имя пользователя, если есть
+    if (currentUser && currentUser.login) {
+        const userNameElement = document.querySelector('.userAuthorized p');
+        if (userNameElement) userNameElement.textContent = currentUser.login;
+    }
+
+    // Инициализация остальных частей приложения
+    initAllMultiselects();
+    GetSettings().then(() => hideDisabledRows());
+}
+
+/**
+ * Восстанавливает состояние аутентификации при загрузке страницы
+ * Проверяет наличие токена в localStorage и восстанавливает состояние авторизации
+ */
+/**
+ * Восстанавливает состояние аутентификации при загрузке страницы
+ * Проверяет наличие токена в localStorage и восстанавливает состояние авторизации
+ */
+// export function restoreAuthState() {
+//     const token = localStorage.getItem('token');
+
+//     if (token) {
+//         isLogged = true;
+//         document.getElementById('notLogged').classList.add('auth-hidden');
+//         document.getElementById('isAuthorized').classList.remove('auth-hidden');
+//         console.log("Добро пожаловать, admin");
+//         initAllMultiselects();
+//         GetSettings().then(() => hideDisabledRows());
+//     } else {
+//         isLogged = false;
+//         document.getElementById('notLogged').classList.remove('auth-hidden');
+//         document.getElementById('isAuthorized').classList.add('auth-hidden');
+//     }
+// }
 
 /**
  * Инициализирует обработчики событий для элементов аутентификации
